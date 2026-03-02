@@ -49,7 +49,25 @@ namespace UniCliqueBackend.Persistence.Repositories
         public async Task UpdateAsync(User user)
         {
             _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    var l = msg.ToLowerInvariant();
+                    if (l.Contains("ix_users_email") || l.Contains("users_email_key"))
+                        throw new Exception("User with this email or username already exists.");
+                    if (l.Contains("ix_users_username") || l.Contains("users_username_key"))
+                        throw new Exception("User with this email or username already exists.");
+                    if (l.Contains("ix_users_phonenumber") || l.Contains("users_phonenumber_key"))
+                        throw new Exception("Phone already exists.");
+                }
+                throw;
+            }
         }
 
         public async Task<UserRefreshToken?> GetRefreshTokenAsync(string tokenHash)

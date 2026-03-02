@@ -30,7 +30,50 @@ namespace UniCliqueBackend.Application.Services
 
         public async Task RegisterAsync(RegisterRequestDto request)
         {
-            if (await _userRepository.ExistsAsync(request.Email, request.Username))
+            var existingByEmail = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingByEmail != null)
+            {
+                if (existingByEmail.IsBanned)
+                    throw new Exception("User with this email or username already exists.");
+                if (existingByEmail.IsDeleted || !existingByEmail.IsEmailVerified)
+                {
+                    var passwordHashExisting = _passwordHasher.HashPassword(request.Password);
+                    var desiredUsername = request.Username;
+                    if (!string.Equals(existingByEmail.Username, desiredUsername, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var conflict = await _userRepository.GetByUsernameAsync(desiredUsername);
+                        if (conflict != null && conflict.Id != existingByEmail.Id)
+                        {
+                            var baseUsername = desiredUsername;
+                            var usernameCandidate = baseUsername;
+                            var rnd = new Random();
+                            while (true)
+                            {
+                                var check = await _userRepository.GetByUsernameAsync(usernameCandidate);
+                                if (check == null || check.Id == existingByEmail.Id) break;
+                                usernameCandidate = $"{baseUsername}{rnd.Next(1000, 9999)}";
+                            }
+                            desiredUsername = usernameCandidate;
+                        }
+                    }
+                    existingByEmail.FullName = request.FullName;
+                    existingByEmail.Username = desiredUsername;
+                    existingByEmail.PhoneNumber = request.PhoneNumber;
+                    existingByEmail.BirthDate = request.BirthDate.ToUniversalTime();
+                    existingByEmail.PasswordHash = passwordHashExisting;
+                    existingByEmail.IsDeleted = false;
+                    existingByEmail.DeletedAt = null;
+                    existingByEmail.IsActive = true;
+                    await _userRepository.UpdateAsync(existingByEmail);
+                    await _userRepository.RemoveActiveVerificationCodesAsync(existingByEmail.Id, VerificationPurpose.RegisterEmailVerification);
+                    await SendRegisterEmailVerificationAsync(existingByEmail);
+                    return;
+                }
+                throw new Exception("User with this email or username already exists.");
+            }
+
+            var existingByUsername = await _userRepository.GetByUsernameAsync(request.Username);
+            if (existingByUsername != null)
             {
                 throw new Exception("User with this email or username already exists.");
             }
@@ -49,14 +92,13 @@ namespace UniCliqueBackend.Application.Services
                 Email = request.Email,
                 Username = request.Username,
                 PhoneNumber = request.PhoneNumber,
-                BirthDate = request.BirthDate.ToUniversalTime(), // Postgres prefers UTC
+                BirthDate = request.BirthDate.ToUniversalTime(),
                 PasswordHash = passwordHash,
                 Role = RoleType.User,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Add consents
             if (request.AcceptKvkk)
             {
                 user.UserConsents.Add(new UserConsent { ConsentType = ConsentType.KVKK, IsAccepted = true, AcceptedAt = DateTime.UtcNow });
