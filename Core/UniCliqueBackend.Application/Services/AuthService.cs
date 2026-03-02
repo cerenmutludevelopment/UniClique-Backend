@@ -342,7 +342,13 @@ namespace UniCliqueBackend.Application.Services
             };
 
             await _userRepository.AddVerificationCodeAsync(user.Id, verification);
-            await _emailService.SendAsync(user.Email, "E-posta Doğrulama Kodu", $"Doğrulama kodunuz: {codeStr}");
+            try
+            {
+                await _emailService.SendAsync(user.Email, "E-posta Doğrulama Kodu", $"Doğrulama kodunuz: {codeStr}");
+            }
+            catch
+            {
+            }
         }
 
         private static (string e164, string local) GetTrPhoneVariants(string phone)
@@ -383,9 +389,7 @@ namespace UniCliqueBackend.Application.Services
         {
             var user = await _userRepository.GetByEmailAsync(email);
             if (user == null) return false;
-            user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(user);
+            await _userRepository.HardDeleteUserByIdAsync(user.Id);
             return true;
         }
     }

@@ -25,5 +25,6 @@ namespace UniCliqueBackend.Application.Interfaces.Repositories
         Task<UserVerificationCode?> GetLatestVerificationCodeAsync(Guid userId, VerificationPurpose purpose);
         Task UpdateVerificationCodeAsync(UserVerificationCode code);
         Task ClearAllUserDataAsync();
+        Task HardDeleteUserByIdAsync(Guid userId);
     }
 }

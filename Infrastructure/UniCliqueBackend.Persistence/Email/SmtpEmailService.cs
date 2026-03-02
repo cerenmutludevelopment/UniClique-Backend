@@ -24,6 +24,7 @@ namespace UniCliqueBackend.Persistence.Email
             var provider = _configuration["Email:Provider"];
             var enableSslStr = _configuration["Email:EnableSsl"];
             var replyTo = _configuration["Email:ReplyTo"];
+            var timeoutStr = _configuration["Email:TimeoutMs"];
 
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
             var missing = string.IsNullOrWhiteSpace(host) ||
@@ -65,11 +66,17 @@ namespace UniCliqueBackend.Persistence.Email
             {
                 enableSsl = parsed;
             }
+            var timeoutMs = 15000;
+            if (int.TryParse(timeoutStr, out var parsedTimeout) && parsedTimeout > 0)
+            {
+                timeoutMs = parsedTimeout;
+            }
 
             using var smtp = new SmtpClient(host!, port)
             {
                 Credentials = new NetworkCredential(username, password),
-                EnableSsl = enableSsl
+                EnableSsl = enableSsl,
+                Timeout = timeoutMs
             };
 
             using var mail = new MailMessage(from!, to, subject, body);
@@ -77,7 +84,15 @@ namespace UniCliqueBackend.Persistence.Email
             {
                 mail.ReplyToList.Add(new MailAddress(replyTo));
             }
-            await smtp.SendMailAsync(mail);
+            var sendTask = smtp.SendMailAsync(mail);
+            var delayTask = Task.Delay(timeoutMs);
+            var completed = await Task.WhenAny(sendTask, delayTask);
+            if (completed != sendTask)
+            {
+                try { smtp.Dispose(); } catch { }
+                throw new TimeoutException("SMTP send timeout");
+            }
+            await sendTask;
         }
     }
 }

@@ -240,5 +240,24 @@ namespace UniCliqueBackend.Persistence.Repositories
 
             await _context.Database.ExecuteSqlRawAsync(sql);
         }
+
+        public async Task HardDeleteUserByIdAsync(Guid userId)
+        {
+            var sql = @"
+                DELETE FROM ""UserRefreshTokens"" WHERE ""UserId"" = {0};
+                DELETE FROM ""UserVerificationCodes"" WHERE ""UserId"" = {0};
+                DELETE FROM ""UserConsents"" WHERE ""UserId"" = {0};
+                DELETE FROM ""UserExternalLogins"" WHERE ""UserId"" = {0};
+                DELETE FROM ""BusinessRequests"" WHERE ""UserId"" = {0};
+                DELETE FROM ""Friendships"" WHERE ""RequesterId"" = {0} OR ""AddresseeId"" = {0};
+                DELETE FROM ""Posts"" WHERE ""UserId"" = {0};
+                DELETE FROM ""EventParticipants"" WHERE ""UserId"" = {0};
+                DELETE FROM ""Posts"" WHERE ""EventId"" IN (SELECT ""Id"" FROM ""Events"" WHERE ""OwnerId"" = {0});
+                DELETE FROM ""EventParticipants"" WHERE ""EventId"" IN (SELECT ""Id"" FROM ""Events"" WHERE ""OwnerId"" = {0});
+                DELETE FROM ""Events"" WHERE ""OwnerId"" = {0};
+                DELETE FROM ""Users"" WHERE ""Id"" = {0};
+            ";
+            await _context.Database.ExecuteSqlRawAsync(sql, userId);
+        }
     }
 }
