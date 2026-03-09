@@ -74,11 +74,13 @@ namespace UniCliqueBackend.Persistence.Email
             {
                 enableSsl = parsed;
             }
-            var timeoutMs = 15000;
+            var timeoutMs = 60000; // Increased to 60s for cloud environments
             if (int.TryParse(timeoutStr, out var parsedTimeout) && parsedTimeout > 0)
             {
                 timeoutMs = parsedTimeout;
             }
+
+            Console.WriteLine($"[SMTP-DEBUG] Attempting to send email via {host}:{port} (SSL: {enableSsl}, Timeout: {timeoutMs}ms, User: {username})");
 
             using var smtp = new SmtpClient(host!, port)
             {
@@ -98,9 +100,11 @@ namespace UniCliqueBackend.Persistence.Email
             if (completed != sendTask)
             {
                 try { smtp.Dispose(); } catch { }
+                Console.WriteLine($"[SMTP-DEBUG] Failed: SMTP send timeout after {timeoutMs}ms");
                 throw new TimeoutException("SMTP send timeout");
             }
             await sendTask;
+            Console.WriteLine("[SMTP-DEBUG] Success: Email sent successfully.");
         }
     }
 }
