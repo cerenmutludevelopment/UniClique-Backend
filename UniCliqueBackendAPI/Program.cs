@@ -152,11 +152,12 @@ var app = builder.Build();
 // --------------------
 // MIDDLEWARE
 // --------------------
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger is enabled in both Dev and Production for easier testing/verification
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Root path handler to avoid 404
+app.MapGet("/", () => Results.Ok(new { message = "UniClique API is running!", swagger = "/swagger/index.html" }));
 
 // --------------------
 // SEED DATABASE
