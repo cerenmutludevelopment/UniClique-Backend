@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using UniCliqueBackend.Application.DTOs.Common;
 using System.Security.Claims;
+using System.Net.Mail;
 
 
 
@@ -249,6 +250,26 @@ app.UseExceptionHandler(errorApp =>
             else if (msg.Contains("Verification code sent.", StringComparison.OrdinalIgnoreCase))
             {
                 statusCode = 403; code = "auth.verification_required"; message = "Doğrulama kodu gönderildi.";
+            }
+            else if (msg.Contains("SMTP send timeout", StringComparison.OrdinalIgnoreCase))
+            {
+                statusCode = 504; code = "smtp.timeout"; message = "SMTP gönderimi zaman aşımına uğradı.";
+            }
+            else if (msg.Contains("SMTP auth failed", StringComparison.OrdinalIgnoreCase))
+            {
+                statusCode = 502; code = "smtp.auth_failed"; message = "SMTP kimlik doğrulama başarısız.";
+            }
+            else if (msg.Contains("SMTP connect failed", StringComparison.OrdinalIgnoreCase))
+            {
+                statusCode = 502; code = "smtp.connect_failed"; message = "SMTP sunucusuna bağlanılamadı.";
+            }
+            else if (msg.Contains("SMTP network unreachable", StringComparison.OrdinalIgnoreCase))
+            {
+                statusCode = 502; code = "smtp.network_unreachable"; message = "SMTP ağına erişilemedi.";
+            }
+            else if (msg.Contains("SMTP invalid email format", StringComparison.OrdinalIgnoreCase))
+            {
+                statusCode = 400; code = "smtp.invalid_email"; message = "Gönderen veya alıcı e-posta adresi geçersiz.";
             }
         }
         if (app.Environment.IsDevelopment() && !string.IsNullOrEmpty(ex?.Message))

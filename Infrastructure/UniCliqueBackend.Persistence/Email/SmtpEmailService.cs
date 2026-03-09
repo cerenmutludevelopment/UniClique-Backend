@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Mail;
+using System.Net.Sockets;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using UniCliqueBackend.Application.Interfaces.Services;
 
@@ -80,31 +82,69 @@ namespace UniCliqueBackend.Persistence.Email
                 timeoutMs = parsedTimeout;
             }
 
-            Console.WriteLine($"[SMTP-DEBUG] Attempting to send email via {host}:{port} (SSL: {enableSsl}, Timeout: {timeoutMs}ms, User: {username})");
+            Console.WriteLine($"[SMTP-DEBUG] Attempting SMTP via {host}:{port} (SSL: {enableSsl}, Timeout: {timeoutMs}ms)");
 
-            using var smtp = new SmtpClient(host!, port)
+            using var smtp = new SmtpClient(host!, port);
+            smtp.UseDefaultCredentials = false;
+            smtp.Credentials = new NetworkCredential(username, password);
+            smtp.EnableSsl = enableSsl;
+            smtp.Timeout = timeoutMs;
+
+            MailAddress fromAddr;
+            MailAddress toAddr;
+            try
             {
-                Credentials = new NetworkCredential(username, password),
-                EnableSsl = enableSsl,
-                Timeout = timeoutMs
-            };
+                fromAddr = new MailAddress(from!);
+                toAddr = new MailAddress(to);
+            }
+            catch
+            {
+                Console.WriteLine("[SMTP-DEBUG] Failed: invalid email format for From/To");
+                throw new SmtpException("SMTP invalid email format.");
+            }
 
-            using var mail = new MailMessage(from!, to, subject, body);
+            using var mail = new MailMessage(fromAddr, toAddr)
+            {
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true,
+                BodyEncoding = Encoding.UTF8,
+                SubjectEncoding = Encoding.UTF8
+            };
             if (!string.IsNullOrWhiteSpace(replyTo))
             {
                 mail.ReplyToList.Add(new MailAddress(replyTo));
             }
-            var sendTask = smtp.SendMailAsync(mail);
-            var delayTask = Task.Delay(timeoutMs);
-            var completed = await Task.WhenAny(sendTask, delayTask);
-            if (completed != sendTask)
+            try
             {
-                try { smtp.Dispose(); } catch { }
-                Console.WriteLine($"[SMTP-DEBUG] Failed: SMTP send timeout after {timeoutMs}ms");
-                throw new TimeoutException("SMTP send timeout");
+                var sendTask = smtp.SendMailAsync(mail);
+                var delayTask = Task.Delay(timeoutMs);
+                await Task.WhenAny(sendTask, delayTask);
+                if (!sendTask.IsCompleted)
+                {
+                    Console.WriteLine($"[SMTP-DEBUG] Failed: SMTP send timeout after {timeoutMs}ms");
+                    throw new TimeoutException("SMTP send timeout");
+                }
+                await sendTask;
+                Console.WriteLine("[SMTP-DEBUG] Success: Email sent successfully.");
             }
-            await sendTask;
-            Console.WriteLine("[SMTP-DEBUG] Success: Email sent successfully.");
+            catch (SmtpException ex)
+            {
+                var msg = ex.Message ?? "";
+                Console.WriteLine($"[SMTP-DEBUG] SMTP exception: {ex.StatusCode} {msg}");
+                if (msg.Contains("authentication", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("Username and Password not accepted", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("5.7", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new SmtpException(SmtpStatusCode.GeneralFailure, $"SMTP auth failed: {msg}");
+                }
+                throw new SmtpException(SmtpStatusCode.GeneralFailure, $"SMTP connect failed: {msg}");
+            }
+            catch (SocketException ex)
+            {
+                Console.WriteLine($"[SMTP-DEBUG] Socket exception: {ex.SocketErrorCode} {ex.Message}");
+                throw new SmtpException(SmtpStatusCode.GeneralFailure, "SMTP network unreachable.");
+            }
         }
     }
 }
