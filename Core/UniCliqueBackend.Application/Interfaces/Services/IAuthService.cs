@@ -4,19 +4,21 @@ namespace UniCliqueBackend.Application.Interfaces.Services
 {
     public interface IAuthService
     {
-        Task RegisterAsync(RegisterRequestDto request);
+        Task<string> RegisterAsync(RegisterRequestDto request);
 
         Task<TokenResponseDto> LoginAsync(LoginRequestDto request);
 
         Task<TokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request);
 
-        Task LogoutAsync(Guid userId, string refreshToken);
+        Task LogoutByRefreshAsync(string refreshToken);
         Task<TokenResponseDto> ExternalLoginAsync(ExternalLoginRequestDto request);
-        Task<TokenResponseDto> VerifyEmailAsync(VerifyEmailRequestDto request);
+        Task<TokenResponseDto> VerifyEmailByUserIdAsync(VerifyEmailByUserIdRequestDto request);
+        Task ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request);
         Task ResetDatabaseAsync();
         Task<bool> DeleteUserByEmailAsync(string email);
-        Task ForgotPasswordStartAsync(ForgotPasswordStartRequestDto request);
-        Task VerifyPasswordResetCodeAsync(VerifyResetCodeRequestDto request);
-        Task ResetPasswordWithCodeAsync(ResetPasswordWithCodeRequestDto request);
+        Task<string> ForgotPasswordStartAsync(ForgotPasswordStartRequestDto request);
+        Task VerifyPasswordResetCodeByUserIdAsync(VerifyResetByUserIdRequestDto request);
+        Task ResetPasswordWithCodeByUserIdAsync(ResetPasswordByUserIdRequestDto request);
+        Task<bool> IsUsernameAvailableAsync(string username);
     }
 }

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using UniCliqueBackend.Application.DTOs.Common;
 using System.Security.Claims;
 using System.Net.Mail;
+using System.Text.Json.Serialization;
 
 
 
@@ -75,7 +76,11 @@ builder.Services.AddPersistence();
 // --------------------
 // VALIDATION
 // --------------------
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services
     .AddFluentValidationAutoValidation()
@@ -85,6 +90,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "UniClique API", Version = "v1" });
+    c.CustomSchemaIds(type => type.FullName);
     var securityScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -185,7 +191,6 @@ app.UseExceptionHandler(errorApp =>
         var ex = feature?.Error;
 
         var statusCode = 500;
-        var code = "error.unhandled";
         var message = "Beklenmeyen bir hata oluştu.";
 
         var msg = ex?.Message ?? "";
@@ -193,83 +198,83 @@ app.UseExceptionHandler(errorApp =>
         {
             if (msg.Contains("Invalid credentials.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 401; code = "auth.invalid_credentials"; message = "Kimlik bilgileri geçersiz.";
+                statusCode = 401; message = "Kimlik bilgileri geçersiz.";
             }
             else if (msg.Contains("Account is not active.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 403; code = "auth.account_inactive"; message = "Hesap aktif değil.";
+                statusCode = 403; message = "Hesap aktif değil.";
             }
             else if (msg.Contains("Invalid refresh token.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 401; code = "token.invalid"; message = "Yenileme tokenı geçersiz.";
+                statusCode = 401; message = "Yenileme tokenı geçersiz.";
             }
             else if (msg.Contains("Refresh token revoked.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 401; code = "token.revoked"; message = "Yenileme tokenı iptal edildi.";
+                statusCode = 401; message = "Yenileme tokenı iptal edildi.";
             }
             else if (msg.Contains("Refresh token expired.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 401; code = "token.expired"; message = "Yenileme tokenı süresi doldu.";
+                statusCode = 401; message = "Yenileme tokenı süresi doldu.";
             }
             else if (msg.Contains("User not found.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 404; code = "user.not_found"; message = "Kullanıcı bulunamadı.";
+                statusCode = 404; message = "Kullanıcı bulunamadı.";
             }
             else if (msg.Contains("already exists", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 409; code = "user.already_exists"; message = "Bu e-posta veya kullanıcı adı kullanılıyor.";
+                statusCode = 409; message = "Bu e-posta veya kullanıcı adı kullanılıyor.";
             }
             else if (msg.Contains("Phone already exists", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 409; code = "user.phone_exists"; message = "Telefon numarası zaten kayıtlı.";
+                statusCode = 409; message = "Telefon numarası zaten kayıtlı.";
             }
             else if (msg.Contains("Email is required for first-time external login.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 400; code = "external_login.email_required"; message = "İlk dış giriş için e-posta zorunludur.";
+                statusCode = 400; message = "İlk dış giriş için e-posta zorunludur.";
             }
             else if (msg.Contains("Verification code not found.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 404; code = "verification.code_not_found"; message = "Doğrulama kodu bulunamadı.";
+                statusCode = 404; message = "Doğrulama kodu bulunamadı.";
             }
             else if (msg.Contains("Verification code expired.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 400; code = "verification.code_expired"; message = "Doğrulama kodunun süresi dolmuş.";
+                statusCode = 400; message = "Doğrulama kodunun süresi dolmuş.";
             }
             else if (msg.Contains("Invalid verification code.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 400; code = "verification.code_invalid"; message = "Doğrulama kodu geçersiz.";
+                statusCode = 400; message = "Doğrulama kodu geçersiz.";
             }
             else if (msg.Contains("Email already verified.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 409; code = "verification.already_verified"; message = "E-posta zaten doğrulanmış.";
+                statusCode = 409; message = "E-posta zaten doğrulanmış.";
             }
             else if (msg.Contains("Email not verified.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 403; code = "auth.email_not_verified"; message = "E-posta doğrulanmadı.";
+                statusCode = 403; message = "E-posta doğrulanmadı.";
             }
             else if (msg.Contains("Verification code sent.", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 403; code = "auth.verification_required"; message = "Doğrulama kodu gönderildi.";
+                statusCode = 403; message = "Doğrulama kodu gönderildi.";
             }
             else if (msg.Contains("SMTP send timeout", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 504; code = "smtp.timeout"; message = "SMTP gönderimi zaman aşımına uğradı.";
+                statusCode = 504; message = "SMTP gönderimi zaman aşımına uğradı.";
             }
             else if (msg.Contains("SMTP auth failed", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 502; code = "smtp.auth_failed"; message = "SMTP kimlik doğrulama başarısız.";
+                statusCode = 502; message = "SMTP kimlik doğrulama başarısız.";
             }
             else if (msg.Contains("SMTP connect failed", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 502; code = "smtp.connect_failed"; message = "SMTP sunucusuna bağlanılamadı.";
+                statusCode = 502; message = "SMTP sunucusuna bağlanılamadı.";
             }
             else if (msg.Contains("SMTP network unreachable", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 502; code = "smtp.network_unreachable"; message = "SMTP ağına erişilemedi.";
+                statusCode = 502; message = "SMTP ağına erişilemedi.";
             }
             else if (msg.Contains("SMTP invalid email format", StringComparison.OrdinalIgnoreCase))
             {
-                statusCode = 400; code = "smtp.invalid_email"; message = "Gönderen veya alıcı e-posta adresi geçersiz.";
+                statusCode = 400; message = "Gönderen veya alıcı e-posta adresi geçersiz.";
             }
         }
         if (app.Environment.IsDevelopment() && !string.IsNullOrEmpty(ex?.Message))

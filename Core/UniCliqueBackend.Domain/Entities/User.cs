@@ -27,6 +27,14 @@ namespace UniCliqueBackend.Domain.Entities
 
         public RoleType Role { get; set; } = RoleType.User;
 
+        public bool IsStudent { get; set; } = false;
+        [MaxLength(300)]
+        public string? StudentDocumentUrl { get; set; }
+        public StudentVerificationStatus StudentVerificationStatus { get; set; } = StudentVerificationStatus.None;
+        public DateTime? StudentVerifiedAt { get; set; }
+        [MaxLength(300)]
+        public string? StudentVerificationNote { get; set; }
+
         // Profile Details
         [MaxLength(200)]
         public string? ProfilePhotoUrl { get; set; } // Profil fotoğrafı

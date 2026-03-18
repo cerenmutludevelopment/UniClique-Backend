@@ -28,7 +28,7 @@ namespace UniCliqueBackend.Application.Services
             _emailService = emailService;
         }
 
-        public async Task RegisterAsync(RegisterRequestDto request)
+        public async Task<string> RegisterAsync(RegisterRequestDto request)
         {
             var existingByEmail = await _userRepository.GetByEmailAsync(request.Email);
             if (existingByEmail != null)
@@ -61,13 +61,20 @@ namespace UniCliqueBackend.Application.Services
                     existingByEmail.PhoneNumber = request.PhoneNumber;
                     existingByEmail.BirthDate = request.BirthDate.ToUniversalTime();
                     existingByEmail.PasswordHash = passwordHashExisting;
+                    existingByEmail.IsStudent = request.IsStudent;
+                    existingByEmail.StudentDocumentUrl = request.IsStudent ? request.StudentDocumentUrl : null;
+                    existingByEmail.StudentVerificationStatus = request.IsStudent && !string.IsNullOrWhiteSpace(request.StudentDocumentUrl)
+                        ? StudentVerificationStatus.Pending
+                        : StudentVerificationStatus.None;
+                    existingByEmail.StudentVerifiedAt = null;
+                    existingByEmail.StudentVerificationNote = null;
                     existingByEmail.IsDeleted = false;
                     existingByEmail.DeletedAt = null;
                     existingByEmail.IsActive = true;
                     await _userRepository.UpdateAsync(existingByEmail);
                     await _userRepository.RemoveActiveVerificationCodesAsync(existingByEmail.Id, VerificationPurpose.RegisterEmailVerification);
                     await SendRegisterEmailVerificationAsync(existingByEmail);
-                    return;
+                    return existingByEmail.Id.ToString();
                 }
                 throw new Exception("User with this email or username already exists.");
             }
@@ -95,6 +102,11 @@ namespace UniCliqueBackend.Application.Services
                 BirthDate = request.BirthDate.ToUniversalTime(),
                 PasswordHash = passwordHash,
                 Role = RoleType.User,
+                IsStudent = request.IsStudent,
+                StudentDocumentUrl = request.IsStudent ? request.StudentDocumentUrl : null,
+                StudentVerificationStatus = request.IsStudent && !string.IsNullOrWhiteSpace(request.StudentDocumentUrl)
+                    ? StudentVerificationStatus.Pending
+                    : StudentVerificationStatus.None,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -114,6 +126,7 @@ namespace UniCliqueBackend.Application.Services
 
             await _userRepository.AddAsync(user);
             await SendRegisterEmailVerificationAsync(user);
+            return user.Id.ToString();
         }
 
         public async Task<TokenResponseDto> LoginAsync(LoginRequestDto request)
@@ -168,16 +181,16 @@ namespace UniCliqueBackend.Application.Services
             return result;
         }
 
-        public async Task LogoutAsync(Guid userId, string refreshToken)
+        public async Task LogoutByRefreshAsync(string refreshToken)
         {
+            if (string.IsNullOrWhiteSpace(refreshToken)) return;
             var hash = _tokenService.HashRefreshToken(refreshToken);
             var token = await _userRepository.GetRefreshTokenAsync(hash);
-            if (token != null && token.UserId == userId && !token.IsRevoked)
+            if (token != null && !token.IsRevoked)
             {
                 await _userRepository.RevokeRefreshTokenAsync(token, null);
             }
         }
-
         public async Task<TokenResponseDto> ExternalLoginAsync(ExternalLoginRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Provider) || string.IsNullOrWhiteSpace(request.ProviderUserId))
@@ -251,9 +264,13 @@ namespace UniCliqueBackend.Application.Services
             return await GenerateTokensForUser(user);
         }
 
-        public async Task<TokenResponseDto> VerifyEmailAsync(VerifyEmailRequestDto request)
+        
+
+        public async Task<TokenResponseDto> VerifyEmailByUserIdAsync(VerifyEmailByUserIdRequestDto request)
         {
-            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (!Guid.TryParse(request.UserId, out var userId))
+                throw new Exception("User not found.");
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new Exception("User not found.");
             if (user.IsEmailVerified)
@@ -286,6 +303,30 @@ namespace UniCliqueBackend.Application.Services
             await _userRepository.RemoveActiveVerificationCodesAsync(user.Id, VerificationPurpose.RegisterEmailVerification);
 
             return await GenerateTokensForUser(user);
+        }
+
+        public async Task ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                throw new Exception("Email is required.");
+
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return;
+            }
+            if (user.IsEmailVerified)
+            {
+                throw new Exception("Email already verified.");
+            }
+
+            var last = await _userRepository.GetLatestVerificationCodeAsync(user.Id, VerificationPurpose.RegisterEmailVerification);
+            if (last != null && last.SentAt.AddSeconds(60) > DateTime.UtcNow)
+            {
+                throw new Exception("Verification code sent.");
+            }
+
+            await SendRegisterEmailVerificationAsync(user);
         }
 
         private async Task<TokenResponseDto> GenerateTokensForUser(User user)
@@ -368,15 +409,19 @@ namespace UniCliqueBackend.Application.Services
             return (phone, phone);
         }
 
-        public async Task ForgotPasswordStartAsync(ForgotPasswordStartRequestDto request)
+        public async Task<string> ForgotPasswordStartAsync(ForgotPasswordStartRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
                 throw new Exception("Email is required.");
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
+                throw new Exception("User not found.");
+
+            var last = await _userRepository.GetLatestVerificationCodeAsync(user.Id, VerificationPurpose.ForgotPassword);
+            if (last != null && last.SentAt.AddSeconds(60) > DateTime.UtcNow)
             {
-                return;
+                throw new Exception("Verification code sent.");
             }
 
             await _userRepository.RemoveActiveVerificationCodesAsync(user.Id, VerificationPurpose.ForgotPassword);
@@ -397,11 +442,16 @@ namespace UniCliqueBackend.Application.Services
 
             await _userRepository.AddVerificationCodeAsync(user.Id, verification);
             await _emailService.SendAsync(user.Email, "Şifre Sıfırlama Kodu", $"Şifre sıfırlama kodunuz: {codeStr}");
+            return user.Id.ToString();
         }
 
-        public async Task VerifyPasswordResetCodeAsync(VerifyResetCodeRequestDto request)
+        
+
+        public async Task VerifyPasswordResetCodeByUserIdAsync(VerifyResetByUserIdRequestDto request)
         {
-            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (!Guid.TryParse(request.UserId, out var userId))
+                throw new Exception("Verification code not found.");
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new Exception("Verification code not found.");
 
@@ -422,14 +472,18 @@ namespace UniCliqueBackend.Application.Services
             }
         }
 
-        public async Task ResetPasswordWithCodeAsync(ResetPasswordWithCodeRequestDto request)
+        
+
+        public async Task ResetPasswordWithCodeByUserIdAsync(ResetPasswordByUserIdRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
                 throw new Exception("Password must be at least 8 characters.");
             if (request.NewPassword != request.ConfirmNewPassword)
                 throw new Exception("Passwords do not match.");
 
-            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (!Guid.TryParse(request.UserId, out var userId))
+                throw new Exception("User not found.");
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new Exception("User not found.");
 
@@ -464,6 +518,13 @@ namespace UniCliqueBackend.Application.Services
             if (user == null) return false;
             await _userRepository.HardDeleteUserByIdAsync(user.Id);
             return true;
+        }
+
+        public async Task<bool> IsUsernameAvailableAsync(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username)) return false;
+            var existing = await _userRepository.GetByUsernameAsync(username);
+            return existing == null;
         }
     }
 }

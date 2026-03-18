@@ -8,6 +8,7 @@ using UniCliqueBackend.Application.Interfaces.Repositories;
 using UniCliqueBackend.Application.Interfaces.Security;
 using UniCliqueBackend.Application.Interfaces.Services;
 using UniCliqueBackend.Domain.Entities;
+using UniCliqueBackend.Domain.Enums;
 
 namespace UniCliqueBackend.Application.Services
 {
@@ -35,6 +36,10 @@ namespace UniCliqueBackend.Application.Services
                 Email = u.Email,
                 Username = u.Username,
                 Role = u.Role,
+                IsStudent = u.IsStudent,
+                StudentVerificationStatus = u.StudentVerificationStatus,
+                StudentDocumentUrl = u.StudentDocumentUrl,
+                StudentVerifiedAt = u.StudentVerifiedAt,
                 IsEmailVerified = u.IsEmailVerified,
                 IsActive = u.IsActive,
                 IsBanned = u.IsBanned,
@@ -56,6 +61,10 @@ namespace UniCliqueBackend.Application.Services
                 Email = user.Email,
                 Username = user.Username,
                 Role = user.Role,
+                IsStudent = user.IsStudent,
+                StudentVerificationStatus = user.StudentVerificationStatus,
+                StudentDocumentUrl = user.StudentDocumentUrl,
+                StudentVerifiedAt = user.StudentVerifiedAt,
                 IsEmailVerified = user.IsEmailVerified,
                 IsActive = user.IsActive,
                 IsBanned = user.IsBanned,
@@ -147,6 +156,11 @@ namespace UniCliqueBackend.Application.Services
             if (user == null) return null;
 
             // TODO: Fetch real stats from specialized repositories
+            var computedStatus = user.StudentVerificationStatus;
+            if (user.IsStudent && !string.IsNullOrWhiteSpace(user.StudentDocumentUrl) && computedStatus == StudentVerificationStatus.None)
+            {
+                computedStatus = StudentVerificationStatus.Pending;
+            }
             return new UserProfileDto
             {
                 Id = user.Id,
@@ -156,6 +170,9 @@ namespace UniCliqueBackend.Application.Services
                 PhoneNumber = user.PhoneNumber,
                 BirthDate = user.BirthDate,
                 Role = user.Role,
+                IsStudent = user.IsStudent,
+                StudentDocumentUrl = user.StudentDocumentUrl,
+                StudentVerificationStatus = computedStatus,
                 ProfilePhotoUrl = user.ProfilePhotoUrl,
                 University = user.University,
                 Department = user.Department,
@@ -209,6 +226,81 @@ namespace UniCliqueBackend.Application.Services
 
             user.IsDeleted = true;
             await _userRepository.UpdateAsync(user);
+            return true;
+        }
+
+        
+        
+
+        public async Task<IEnumerable<UserDto>> GetStudentRequestsAsync(Domain.Enums.StudentVerificationStatus status)
+        {
+            var list = await _adminRepository.GetAllUsersAsync(1, int.MaxValue);
+            var filtered = list.Where(u =>
+                u.IsStudent &&
+                (
+                    u.StudentVerificationStatus == status ||
+                    (status == StudentVerificationStatus.Pending &&
+                     u.StudentVerificationStatus == StudentVerificationStatus.None &&
+                     !string.IsNullOrWhiteSpace(u.StudentDocumentUrl))
+                ));
+            return filtered.Select(u => new UserDto
+            {
+                Id = u.Id.ToString(),
+                FullName = u.FullName,
+                Email = u.Email,
+                Username = u.Username,
+                Role = u.Role,
+                IsStudent = u.IsStudent,
+                StudentVerificationStatus = u.StudentVerificationStatus,
+                StudentDocumentUrl = u.StudentDocumentUrl,
+                StudentVerifiedAt = u.StudentVerifiedAt,
+                IsEmailVerified = u.IsEmailVerified,
+                IsActive = u.IsActive,
+                IsBanned = u.IsBanned,
+                CreatedAt = u.CreatedAt
+            });
+        }
+
+        public async Task<bool> ApproveStudentAsync(string id, string adminId, string? note)
+        {
+            if (!Guid.TryParse(id, out var userId)) return false;
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+            user.StudentVerificationStatus = Domain.Enums.StudentVerificationStatus.Approved;
+            user.StudentVerifiedAt = DateTime.UtcNow;
+            user.StudentVerificationNote = note;
+            await _userRepository.UpdateAsync(user);
+            var auditLog = new AuditLog
+            {
+                UserId = adminId,
+                TargetUserId = id,
+                Action = "STUDENT_APPROVE",
+                Details = note ?? "",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _adminRepository.AddAuditLogAsync(auditLog);
+            return true;
+        }
+
+        public async Task<bool> RejectStudentAsync(string id, string adminId, string note)
+        {
+            if (!Guid.TryParse(id, out var userId)) return false;
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+            user.StudentVerificationStatus = Domain.Enums.StudentVerificationStatus.Rejected;
+            user.StudentVerifiedAt = DateTime.UtcNow;
+            user.StudentVerificationNote = note;
+            user.IsBanned = true;
+            await _userRepository.UpdateAsync(user);
+            var auditLog = new AuditLog
+            {
+                UserId = adminId,
+                TargetUserId = id,
+                Action = "STUDENT_REJECT",
+                Details = note,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _adminRepository.AddAuditLogAsync(auditLog);
             return true;
         }
     }

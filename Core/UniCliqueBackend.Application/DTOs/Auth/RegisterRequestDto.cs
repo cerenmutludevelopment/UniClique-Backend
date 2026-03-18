@@ -12,6 +12,9 @@ namespace UniCliqueBackend.Application.DTOs.Auth
 
         public string Password { get; set; } = null!;
 
+        public bool IsStudent { get; set; } = false;
+        public string? StudentDocumentUrl { get; set; }
+
         // Consents
         public bool AcceptKvkk { get; set; }
         public bool AcceptTerms { get; set; }

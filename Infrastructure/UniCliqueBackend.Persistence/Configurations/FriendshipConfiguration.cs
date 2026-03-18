@@ -21,6 +21,8 @@ namespace UniCliqueBackend.Persistence.Configurations
                 .WithMany(u => u.UserReceivedFriendRequests)
                 .HasForeignKey(f => f.AddresseeId)
                 .OnDelete(DeleteBehavior.Restrict); // Prevent cascading delete to avoid cycles
+
+            builder.HasQueryFilter(f => !f.IsDeleted && !f.Requester.IsDeleted && !f.Addressee.IsDeleted);
         }
     }
 }

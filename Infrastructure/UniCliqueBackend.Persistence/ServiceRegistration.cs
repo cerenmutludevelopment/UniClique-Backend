@@ -6,6 +6,7 @@ using UniCliqueBackend.Persistence.Repositories;
 using UniCliqueBackend.Persistence.Security;
 using UniCliqueBackend.Persistence.Tokens;
 using UniCliqueBackend.Persistence.Email;
+using UniCliqueBackend.Persistence.Storage;
 
 namespace UniCliqueBackend.Persistence
 {
@@ -22,6 +23,7 @@ namespace UniCliqueBackend.Persistence
             services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<IEmailService, SmtpEmailService>();
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
             return services;
         }

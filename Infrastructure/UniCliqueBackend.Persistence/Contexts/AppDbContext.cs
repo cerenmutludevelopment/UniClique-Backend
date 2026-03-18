@@ -36,6 +36,10 @@ namespace UniCliqueBackend.Persistence.Contexts
             modelBuilder.ApplyConfiguration(new UserRefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new UserExternalLoginConfiguration());
             modelBuilder.ApplyConfiguration(new FriendshipConfiguration());
+            modelBuilder.ApplyConfiguration(new EventConfiguration());
+            modelBuilder.ApplyConfiguration(new EventParticipantConfiguration());
+            modelBuilder.ApplyConfiguration(new PostConfiguration());
+            modelBuilder.ApplyConfiguration(new BusinessRequestConfiguration());
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {

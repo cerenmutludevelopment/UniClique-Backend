@@ -12,6 +12,9 @@ namespace UniCliqueBackend.Application.DTOs.User
         public string PhoneNumber { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
         public RoleType Role { get; set; }
+        public bool IsStudent { get; set; }
+        public string? StudentDocumentUrl { get; set; }
+        public StudentVerificationStatus StudentVerificationStatus { get; set; }
         
         // Profile Details
         public string? ProfilePhotoUrl { get; set; }

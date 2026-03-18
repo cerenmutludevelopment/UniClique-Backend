@@ -17,5 +17,8 @@ namespace UniCliqueBackend.Application.Interfaces.Services
         Task<bool> UpdateProfileAsync(string userId, UpdateProfileDto model);
         Task<bool> ChangePasswordAsync(string userId, ChangePasswordDto model);
         Task<bool> SoftDeleteAccountAsync(string userId);
+        Task<IEnumerable<UserDto>> GetStudentRequestsAsync(UniCliqueBackend.Domain.Enums.StudentVerificationStatus status);
+        Task<bool> ApproveStudentAsync(string id, string adminId, string? note);
+        Task<bool> RejectStudentAsync(string id, string adminId, string note);
     }
 }
