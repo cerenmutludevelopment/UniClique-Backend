@@ -14,7 +14,7 @@ namespace UniCliqueBackend.Application.Services
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
         private readonly IEmailService _emailService;
-        private static readonly string[] _allowedProviders = new[] { "Google", "Facebook", "Instagram" };
+        private static readonly string[] _allowedProviders = new[] { "Google", "Apple", "Facebook", "Instagram" };
 
         public AuthService(
             IUserRepository userRepository, 
@@ -157,6 +157,8 @@ namespace UniCliqueBackend.Application.Services
                 throw new Exception("Email not verified.");
             }
 
+            user.LastLoginAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
             return await GenerateTokensForUser(user);
         }
 
@@ -230,13 +232,12 @@ namespace UniCliqueBackend.Application.Services
                         PasswordHash = passwordHash,
                         Role = RoleType.User,
                         IsActive = true,
-                        IsEmailVerified = false,
+                        IsEmailVerified = true,
                         CreatedAt = DateTime.UtcNow,
                         LastLoginAt = DateTime.UtcNow
                     };
 
                     await _userRepository.AddAsync(user);
-                    await SendRegisterEmailVerificationAsync(user);
                 }
 
                 var external = new UserExternalLogin
@@ -250,16 +251,6 @@ namespace UniCliqueBackend.Application.Services
 
             user.LastLoginAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);
-
-            if (!user.IsEmailVerified)
-            {
-                 // New user via external login must verify email first
-                 // Or existing user who hasn't verified yet
-                 // We threw exception in other flow, here we should probably re-send code if needed
-                 // But wait, if they just registered (lines 163-178), we sent code.
-                 // We should NOT return tokens. We should tell frontend to go to verify screen.
-                 throw new Exception("Verification code sent.");
-            }
 
             return await GenerateTokensForUser(user);
         }

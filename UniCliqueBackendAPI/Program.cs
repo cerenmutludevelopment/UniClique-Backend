@@ -14,6 +14,8 @@ using UniCliqueBackend.Application.DTOs.Common;
 using System.Security.Claims;
 using System.Net.Mail;
 using System.Text.Json.Serialization;
+using UniCliqueBackend.Application.Interfaces.Security;
+using UniCliqueBackend.Persistence.Security;
 
 
 
@@ -131,6 +133,8 @@ builder.Services
     });
 
 builder.Services.Configure<EmailPolicyOptions>(builder.Configuration.GetSection("EmailPolicy"));
+builder.Services.Configure<ExternalAuthOptions>(builder.Configuration.GetSection("ExternalAuth"));
+builder.Services.AddSingleton<IExternalTokenValidator, ExternalTokenValidator>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {

@@ -225,10 +225,25 @@ namespace UniCliqueBackend.Application.Services
             if (user == null) return false;
 
             user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);
             return true;
         }
 
+        public async Task<bool> SetStudentProofAsync(string userId, string documentUrl)
+        {
+            if (!Guid.TryParse(userId, out var uid)) return false;
+            var user = await _userRepository.GetByIdAsync(uid);
+            if (user == null) return false;
+            user.IsStudent = true;
+            user.StudentDocumentUrl = documentUrl;
+            user.StudentVerificationStatus = StudentVerificationStatus.Pending;
+            user.StudentVerifiedAt = null;
+            user.StudentVerificationNote = null;
+            await _userRepository.UpdateAsync(user);
+            return true;
+        }
+ 
         
         
 

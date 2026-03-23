@@ -43,7 +43,7 @@ namespace UniCliqueBackend.Application.Validators.Auth
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty()
-                .Must(IsValidPhone).WithMessage("Telefon numarası '+905xxxxxxxxx' veya '05xxxxxxxxx' formatında olmalı.");
+                .Must(IsValidPhone).WithMessage("Telefon numarası 0 ile başlamalı ve toplam 11 haneli olmalı (05XXXXXXXXX).");
 
             RuleFor(x => x.BirthDate)
                 .Must(IsAdult).WithMessage("Yaş 18’den küçük olamaz.");
@@ -94,9 +94,8 @@ namespace UniCliqueBackend.Application.Validators.Auth
         {
             if (string.IsNullOrWhiteSpace(phone)) return false;
             phone = phone.Trim();
-            var e164 = Regex.IsMatch(phone, @"^\+[1-9]\d{7,14}$");
-            var trGsm = Regex.IsMatch(phone, @"^(?:\+90|0)?5\d{9}$");
-            return e164 || trGsm;
+            // Zorunlu kural: 0 ile başlamalı ve toplam 11 hane olmalı; GSM: 05XXXXXXXXX
+            return Regex.IsMatch(phone, @"^0\d{10}$");
         }
 
         private static bool IsAdult(DateTime birthDate)

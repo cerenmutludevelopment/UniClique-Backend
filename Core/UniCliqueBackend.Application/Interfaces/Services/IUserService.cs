@@ -20,5 +20,6 @@ namespace UniCliqueBackend.Application.Interfaces.Services
         Task<IEnumerable<UserDto>> GetStudentRequestsAsync(UniCliqueBackend.Domain.Enums.StudentVerificationStatus status);
         Task<bool> ApproveStudentAsync(string id, string adminId, string? note);
         Task<bool> RejectStudentAsync(string id, string adminId, string note);
+        Task<bool> SetStudentProofAsync(string userId, string documentUrl);
     }
 }

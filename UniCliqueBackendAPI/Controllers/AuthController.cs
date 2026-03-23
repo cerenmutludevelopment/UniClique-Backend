@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using UniCliqueBackend.Application.DTOs.Auth;
+using UniCliqueBackend.Application.Interfaces.Security;
 
 
 namespace UniCliqueBackendAPI.Controllers
@@ -21,12 +22,14 @@ namespace UniCliqueBackendAPI.Controllers
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
         private readonly IFileStorageService _fileStorage;
+        private readonly IExternalTokenValidator _externalTokenValidator;
 
-        public AuthController(IAuthService authService, IUserService userService, IFileStorageService fileStorage)
+        public AuthController(IAuthService authService, IUserService userService, IFileStorageService fileStorage, IExternalTokenValidator externalTokenValidator)
         {
             _authService = authService;
             _userService = userService;
             _fileStorage = fileStorage;
+            _externalTokenValidator = externalTokenValidator;
         }
 
         [HttpGet("username-available")]
@@ -109,12 +112,13 @@ namespace UniCliqueBackendAPI.Controllers
         [ProducesResponseType(typeof(ApiMessageDto), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExternalLoginGoogle([FromBody] GoogleExternalLoginDto request)
         {
+            var parsed = await _externalTokenValidator.ValidateGoogleIdTokenAsync(request.IdToken);
             var inner = new ExternalLoginRequestDto
             {
-                Provider = "google",
-                ProviderUserId = request.ProviderUserId,
-                Email = request.Email,
-                FullName = request.FullName
+                Provider = "Google",
+                ProviderUserId = parsed.ProviderUserId,
+                Email = parsed.Email ?? "",
+                FullName = parsed.FullName
             };
             var result = await _authService.ExternalLoginAsync(inner);
             return Ok(result);
@@ -125,12 +129,13 @@ namespace UniCliqueBackendAPI.Controllers
         [ProducesResponseType(typeof(ApiMessageDto), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExternalLoginApple([FromBody] AppleExternalLoginDto request)
         {
+            var parsed = await _externalTokenValidator.ValidateAppleIdentityTokenAsync(request.IdentityToken);
             var inner = new ExternalLoginRequestDto
             {
-                Provider = "apple",
-                ProviderUserId = request.ProviderUserId,
-                Email = request.Email,
-                FullName = request.FullName
+                Provider = "Apple",
+                ProviderUserId = parsed.ProviderUserId,
+                Email = parsed.Email ?? "",
+                FullName = parsed.FullName
             };
             var result = await _authService.ExternalLoginAsync(inner);
             return Ok(result);
