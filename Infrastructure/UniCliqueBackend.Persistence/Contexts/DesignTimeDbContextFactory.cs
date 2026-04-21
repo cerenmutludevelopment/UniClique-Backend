@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using System;
+using System.IO;
 
 namespace UniCliqueBackend.Persistence.Contexts
 {
@@ -10,11 +12,37 @@ namespace UniCliqueBackend.Persistence.Contexts
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
 
-            var connectionString =
-                Environment.GetEnvironmentVariable("ConnectionStrings__PostgreSql")
-                ?? "Host=localhost;Port=5432;Database=uniclique_db;Username=uniclique_user;Password=uniclique_pass";
+            // API projesinin yolunu belirle
+            var basePath = Directory.GetCurrentDirectory();
+            var apiPath = Path.Combine(basePath, "UniCliqueBackendAPI");
+            if (!Directory.Exists(apiPath))
+            {
+                apiPath = Path.Combine(basePath, "..", "UniCliqueBackendAPI");
+            }
+
+            // Konfigürasyonu yükle (appsettings + user secrets + env)
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile(Path.Combine(apiPath, "appsettings.json"), optional: true)
+                .AddJsonFile(Path.Combine(apiPath, "appsettings.Development.json"), optional: true)
+                .AddUserSecrets("4601c2c0-c912-4a4f-9118-3a2cf029ce8b")
+                .AddEnvironmentVariables()
+                .Build();
+
+            var connectionString = configuration.GetConnectionString("PostgreSql") 
+                ?? configuration["ConnectionStrings:PostgreSql"];
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                // Fallback (Sadece hiçbir yerde bulunamazsa kullanılır)
+                connectionString = "Host=localhost;Port=5432;Database=uniclique_db;Username=postgres;Password=postgres";
+            }
+
             var t = connectionString.Trim();
             var l = t.ToLowerInvariant();
+            
+            // Neon gibi servislerin sağladığı postgresql:// formatını Npgsql formatına çevir
             if (l.StartsWith("postgres://") || l.StartsWith("postgresql://"))
             {
                 var u = new Uri(t);

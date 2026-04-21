@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UniCliqueBackend.Application.DTOs.Business;
 using UniCliqueBackend.Application.Interfaces.Repositories;
+using UniCliqueBackend.Application.Interfaces.Security;
 using UniCliqueBackend.Application.Interfaces.Services;
 using UniCliqueBackend.Domain.Entities;
 using UniCliqueBackend.Domain.Enums;
@@ -15,87 +16,65 @@ namespace UniCliqueBackend.Application.Services
         private readonly IBusinessRepository _businessRepository;
         private readonly IUserRepository _userRepository;
         private readonly IFriendshipRepository _friendshipRepository;
+        private readonly IPasswordHasher _passwordHasher;
 
         public BusinessService(
             IBusinessRepository businessRepository,
             IUserRepository userRepository,
-            IFriendshipRepository friendshipRepository)
+            IFriendshipRepository friendshipRepository,
+            IPasswordHasher passwordHasher)
         {
             _businessRepository = businessRepository;
             _userRepository = userRepository;
             _friendshipRepository = friendshipRepository;
+            _passwordHasher = passwordHasher;
         }
 
-        public async Task<bool> CreateBusinessRequestAsync(string userId, CreateBusinessRequestDto model)
+        public async Task<string> AdminCreateBusinessAsync(AdminCreateBusinessDto model)
         {
-            if (!Guid.TryParse(userId, out var uid)) return false;
+            // 1. Check if user already exists
+            var existing = await _userRepository.GetByEmailAsync(model.Email);
+            if (existing != null) throw new Exception("Bir işletme veya kullanıcı bu e-posta adresiyle zaten kayıtlı.");
 
-            var existing = await _businessRepository.GetRequestByUserIdAsync(uid);
-            if (existing != null && existing.Status == BusinessRequestStatus.Pending)
-                return false; // Already pending
+            // 2. Generate random password
+            var password = GenerateRandomPassword(10);
+            var passwordHash = _passwordHasher.HashPassword(password);
 
-            var request = new BusinessRequest
+            // 3. Create User
+            var user = new User
             {
-                UserId = uid,
-                BusinessName = model.BusinessName,
-                Description = model.Description,
-                Status = BusinessRequestStatus.Pending,
+                FullName = model.BusinessName,
+                Email = model.Email,
+                Username = model.Email.Split('@')[0] + "_" + Guid.NewGuid().ToString("N").Substring(0, 4),
+                PhoneNumber = model.PhoneNumber,
+                PasswordHash = passwordHash,
+                Role = RoleType.Business,
+                IsActive = true,
+                IsEmailVerified = true, // Admin creates it, so we assume verified or skip for now
+                EmailVerifiedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _businessRepository.AddRequestAsync(request);
-            return true;
-        }
+            await _userRepository.AddAsync(user);
 
-        public async Task<BusinessRequestDto?> GetMyRequestAsync(string userId)
-        {
-            if (!Guid.TryParse(userId, out var uid)) return null;
-
-            var request = await _businessRepository.GetRequestByUserIdAsync(uid);
-            if (request == null) return null;
-
-            return MapToDto(request);
-        }
-
-        public async Task<IEnumerable<BusinessRequestDto>> GetPendingRequestsAsync()
-        {
-            var requests = await _businessRepository.GetPendingRequestsAsync();
-            return requests.Select(MapToDto);
-        }
-
-        public async Task<bool> ApproveRequestAsync(Guid requestId, string adminId)
-        {
-            var request = await _businessRepository.GetRequestByIdAsync(requestId);
-            if (request == null || request.Status != BusinessRequestStatus.Pending) return false;
-
-            request.Status = BusinessRequestStatus.Approved;
-            request.ProcessedAt = DateTime.UtcNow;
-            request.AdminResponse = "Approved by Admin.";
-
-            await _businessRepository.UpdateRequestAsync(request);
-
-            // Update User Role to Business
-            var user = await _userRepository.GetByIdAsync(request.UserId);
-            if (user != null)
+            // 4. Create BusinessDetail
+            var detail = new BusinessDetail
             {
-                user.Role = RoleType.Business;
-                await _userRepository.UpdateAsync(user);
-            }
+                UserId = user.Id,
+                BusinessName = model.BusinessName,
+                OpeningHours = model.OpeningHours,
+                ClosingHours = model.ClosingHours,
+                Activities = model.Activities,
+                City = model.City,
+                Address = model.Address,
+                Description = model.Description,
+                PhotoUrls = model.PhotoUrls != null ? string.Join(",", model.PhotoUrls) : null,
+                CreatedAt = DateTime.UtcNow
+            };
 
-            return true;
-        }
+            await _businessRepository.AddBusinessDetailAsync(detail);
 
-        public async Task<bool> RejectRequestAsync(Guid requestId, string adminId, string reason)
-        {
-            var request = await _businessRepository.GetRequestByIdAsync(requestId);
-            if (request == null || request.Status != BusinessRequestStatus.Pending) return false;
-
-            request.Status = BusinessRequestStatus.Rejected;
-            request.ProcessedAt = DateTime.UtcNow;
-            request.AdminResponse = reason;
-
-            await _businessRepository.UpdateRequestAsync(request);
-            return true;
+            return password;
         }
 
         public async Task<BusinessStatsDto> GetBusinessStatsAsync(string userId)
@@ -122,19 +101,13 @@ namespace UniCliqueBackend.Application.Services
             };
         }
 
-        private BusinessRequestDto MapToDto(BusinessRequest request)
+        private string GenerateRandomPassword(int length)
         {
-            return new BusinessRequestDto
-            {
-                Id = request.Id,
-                UserId = request.UserId,
-                UserName = request.User?.FullName ?? "Unknown",
-                BusinessName = request.BusinessName,
-                Description = request.Description,
-                Status = request.Status,
-                AdminResponse = request.AdminResponse,
-                CreatedAt = request.CreatedAt
-            };
+            // Okunabilirliği artırmak için benzer karakterler (0, O, I, l) çıkarıldı.
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXabcdefghijkmnopqrstuvwx23456789!*?";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 }

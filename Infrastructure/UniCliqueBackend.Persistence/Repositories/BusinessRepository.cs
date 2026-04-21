@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using UniCliqueBackend.Application.Interfaces.Repositories;
 using UniCliqueBackend.Domain.Entities;
-using UniCliqueBackend.Domain.Enums;
 using UniCliqueBackend.Persistence.Contexts;
 
 namespace UniCliqueBackend.Persistence.Repositories
@@ -19,40 +18,22 @@ namespace UniCliqueBackend.Persistence.Repositories
             _context = context;
         }
 
-        public async Task AddRequestAsync(BusinessRequest request)
+        public async Task AddBusinessDetailAsync(BusinessDetail detail)
         {
-            await _context.BusinessRequests.AddAsync(request);
+            await _context.BusinessDetails.AddAsync(detail);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateRequestAsync(BusinessRequest request)
+        public async Task UpdateBusinessDetailAsync(BusinessDetail detail)
         {
-            _context.BusinessRequests.Update(request);
+            _context.BusinessDetails.Update(detail);
             await _context.SaveChangesAsync();
         }
 
-        public async Task<BusinessRequest?> GetRequestByIdAsync(Guid id)
+        public async Task<BusinessDetail?> GetBusinessDetailByUserIdAsync(Guid userId)
         {
-            return await _context.BusinessRequests
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.Id == id);
-        }
-
-        public async Task<BusinessRequest?> GetRequestByUserIdAsync(Guid userId)
-        {
-            return await _context.BusinessRequests
-                .Include(r => r.User)
-                .OrderByDescending(r => r.CreatedAt)
-                .FirstOrDefaultAsync(r => r.UserId == userId);
-        }
-
-        public async Task<IEnumerable<BusinessRequest>> GetPendingRequestsAsync()
-        {
-            return await _context.BusinessRequests
-                .Include(r => r.User)
-                .Where(r => r.Status == BusinessRequestStatus.Pending)
-                .OrderBy(r => r.CreatedAt)
-                .ToListAsync();
+            return await _context.BusinessDetails
+                .FirstOrDefaultAsync(b => b.UserId == userId);
         }
 
         public async Task<int> GetTotalEventsAsync(Guid ownerId)
@@ -62,7 +43,6 @@ namespace UniCliqueBackend.Persistence.Repositories
 
         public async Task<int> GetTotalParticipantsAsync(Guid ownerId)
         {
-            // Sum of current participants in all events owned by this user
             return await _context.Events
                 .Where(e => e.OwnerId == ownerId)
                 .SumAsync(e => e.CurrentParticipantsCount);

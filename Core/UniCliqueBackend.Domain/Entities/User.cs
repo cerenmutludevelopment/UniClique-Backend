@@ -72,6 +72,7 @@ namespace UniCliqueBackend.Domain.Entities
         public ICollection<Event> CreatedEvents { get; set; } = new List<Event>();
         public ICollection<EventParticipant> JoinedEvents { get; set; } = new List<EventParticipant>();
         public ICollection<Post> Posts { get; set; } = new List<Post>();
-        public ICollection<BusinessRequest> BusinessRequests { get; set; } = new List<BusinessRequest>();
+        
+        public BusinessDetail? BusinessDetail { get; set; }
     }
 }

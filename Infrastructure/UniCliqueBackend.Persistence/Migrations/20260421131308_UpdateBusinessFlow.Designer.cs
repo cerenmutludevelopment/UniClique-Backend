@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniCliqueBackend.Persistence.Contexts;
@@ -11,9 +12,11 @@ using UniCliqueBackend.Persistence.Contexts;
 namespace UniCliqueBackend.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421131308_UpdateBusinessFlow")]
+    partial class UpdateBusinessFlow
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,8 +88,10 @@ namespace UniCliqueBackend.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<TimeOnly>("ClosingHours")
-                        .HasColumnType("time without time zone");
+                    b.Property<string>("ClosingHours")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -101,8 +106,10 @@ namespace UniCliqueBackend.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<TimeOnly>("OpeningHours")
-                        .HasColumnType("time without time zone");
+                    b.Property<string>("OpeningHours")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("PhotoUrls")
                         .HasMaxLength(2000)
