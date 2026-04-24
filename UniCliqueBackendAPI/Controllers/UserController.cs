@@ -26,11 +26,47 @@ namespace UniCliqueBackendAPI.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
+ 
+            var profile = await _userService.GetUserProfileAsync(userId, userId);
+            if (profile == null) return NotFound("User not found.");
+ 
+            return Ok(profile);
+        }
 
-            var profile = await _userService.GetUserProfileAsync(userId);
+        [HttpGet("profile/{targetUserId}")]
+        public async Task<IActionResult> GetUserProfile(string targetUserId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var profile = await _userService.GetUserProfileAsync(targetUserId, userId);
             if (profile == null) return NotFound("User not found.");
 
             return Ok(profile);
+        }
+
+        [HttpPost("me/toggle-privacy")]
+        public async Task<IActionResult> TogglePrivacy()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _userService.ToggleProfilePrivacyAsync(userId);
+            if (!result) return BadRequest("Failed to toggle privacy.");
+
+            return Ok("Privacy settings updated.");
+        }
+
+        [HttpPost("me/feedback")]
+        public async Task<IActionResult> PostFeedback([FromBody] TechnicalFeedbackDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _userService.SubmitTechnicalFeedbackAsync(userId, model);
+            if (!result) return BadRequest("Failed to submit feedback.");
+
+            return Ok("Feedback submitted successfully.");
         }
 
         [HttpPut("me")]

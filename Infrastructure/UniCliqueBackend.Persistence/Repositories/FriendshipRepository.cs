@@ -53,6 +53,13 @@ namespace UniCliqueBackend.Persistence.Repositories
             }
         }
 
+        public async Task<IEnumerable<Friendship>> GetAllFriendshipsForUserAsync(Guid userId)
+        {
+            return await _context.Friendships
+                .Where(f => f.RequesterId == userId || f.AddresseeId == userId)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<User>> GetFriendsAsync(Guid userId)
         {
             var friendships = await _context.Friendships

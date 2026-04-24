@@ -10,6 +10,7 @@ namespace UniCliqueBackend.Application.Interfaces.Services
         Task<bool> SendFriendRequestAsync(string userId, string targetUserId);
         Task<bool> AcceptFriendRequestAsync(string userId, Guid requestId);
         Task<bool> RejectFriendRequestAsync(string userId, Guid requestId);
+        Task<bool> CancelFriendRequestAsync(string userId, string targetUserId);
         Task<bool> RemoveFriendAsync(string userId, string friendId);
         
         Task<IEnumerable<FriendDto>> GetFriendsAsync(string userId);

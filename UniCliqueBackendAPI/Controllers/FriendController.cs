@@ -29,6 +29,18 @@ namespace UniCliqueBackendAPI.Controllers
             return Ok("Friend request sent successfully.");
         }
 
+        [HttpDelete("request/cancel/{targetUserId}")]
+        public async Task<IActionResult> CancelFriendRequest(string targetUserId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _friendService.CancelFriendRequestAsync(userId, targetUserId);
+            if (!result) return BadRequest("Failed to cancel friend request.");
+
+            return Ok("Friend request cancelled.");
+        }
+
         [HttpPut("accept/{requestId}")]
         public async Task<IActionResult> AcceptFriendRequest(Guid requestId)
         {

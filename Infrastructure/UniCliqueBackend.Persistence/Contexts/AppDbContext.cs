@@ -19,6 +19,7 @@ namespace UniCliqueBackend.Persistence.Contexts
         public DbSet<EventParticipant> EventParticipants => Set<EventParticipant>();
         public DbSet<Post> Posts => Set<Post>();
         public DbSet<BusinessDetail> BusinessDetails => Set<BusinessDetail>();
+        public DbSet<Report> Reports => Set<Report>();
 
         // 🔹 Constructor
         public AppDbContext(DbContextOptions<AppDbContext> options)

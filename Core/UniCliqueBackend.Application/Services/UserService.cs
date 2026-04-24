@@ -16,12 +16,16 @@ namespace UniCliqueBackend.Application.Services
     {
         private readonly IAdminRepository _adminRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IFriendshipRepository _friendshipRepository;
+        private readonly IReportRepository _reportRepository;
         private readonly IPasswordHasher _passwordHasher;
 
-        public UserService(IAdminRepository adminRepository, IUserRepository userRepository, IPasswordHasher passwordHasher)
+        public UserService(IAdminRepository adminRepository, IUserRepository userRepository, IFriendshipRepository friendshipRepository, IReportRepository reportRepository, IPasswordHasher passwordHasher)
         {
             _adminRepository = adminRepository;
             _userRepository = userRepository;
+            _friendshipRepository = friendshipRepository;
+            _reportRepository = reportRepository;
             _passwordHasher = passwordHasher;
         }
 
@@ -148,41 +152,68 @@ namespace UniCliqueBackend.Application.Services
             return true;
         }
         // User Profile Methods
-        public async Task<UserProfileDto?> GetUserProfileAsync(string id)
+        public async Task<UserProfileDto?> GetUserProfileAsync(string targetId, string currentId)
         {
-            if (!Guid.TryParse(id, out var userId)) return null;
+            if (!Guid.TryParse(targetId, out var targetUserId) || !Guid.TryParse(currentId, out var currentUserId)) 
+                return null;
 
-            var user = await _userRepository.GetByIdAsync(userId);
+            var user = await _userRepository.GetByIdAsync(targetUserId);
             if (user == null) return null;
 
-            // TODO: Fetch real stats from specialized repositories
+            var friendship = await _friendshipRepository.GetFriendshipAsync(targetUserId, currentUserId);
+            bool isFriend = friendship != null && friendship.Status == FriendshipStatus.Accepted;
+            bool isOwnProfile = targetUserId == currentUserId;
+
             var computedStatus = user.StudentVerificationStatus;
             if (user.IsStudent && !string.IsNullOrWhiteSpace(user.StudentDocumentUrl) && computedStatus == StudentVerificationStatus.None)
             {
                 computedStatus = StudentVerificationStatus.Pending;
             }
-            return new UserProfileDto
+
+            var dto = new UserProfileDto
             {
                 Id = user.Id,
                 FullName = user.FullName,
-                Email = user.Email,
                 Username = user.Username,
-                PhoneNumber = user.PhoneNumber,
-                BirthDate = user.BirthDate,
                 Role = user.Role,
                 IsStudent = user.IsStudent,
-                StudentDocumentUrl = user.StudentDocumentUrl,
                 StudentVerificationStatus = computedStatus,
                 ProfilePhotoUrl = user.ProfilePhotoUrl,
                 University = user.University,
                 Department = user.Department,
-                Bio = user.Bio,
                 InteractionScore = user.InteractionScore,
-                FriendCount = 0, // Placeholder
-                CreatedEventCount = 0, // Placeholder
-                JoinedEventCount = 0, // Placeholder
-                IsEmailVerified = user.IsEmailVerified
+                IsEmailVerified = user.IsEmailVerified,
+                IsPrivateAccount = user.IsPrivateAccount,
+                FriendshipStatusWithCurrentUser = friendship?.Status
             };
+
+            // If profile is private and they are not friends (and it's not their own profile), hide sensitive info
+            if (user.IsPrivateAccount && !isFriend && !isOwnProfile)
+            {
+                dto.Email = "******";
+                dto.PhoneNumber = "******";
+                dto.Bio = "This account is private.";
+                dto.BirthDate = DateTime.MinValue;
+                dto.StudentDocumentUrl = null;
+                dto.FriendCount = 0;
+                dto.CreatedEventCount = 0;
+                dto.JoinedEventCount = 0;
+            }
+            else
+            {
+                dto.Email = user.Email;
+                dto.PhoneNumber = user.PhoneNumber;
+                dto.Bio = user.Bio;
+                dto.BirthDate = user.BirthDate;
+                dto.StudentDocumentUrl = user.StudentDocumentUrl;
+                
+                // Fetch real counts
+                var friends = await _friendshipRepository.GetFriendsAsync(targetUserId);
+                dto.FriendCount = friends.Count();
+                // TODO: Add created/joined event counts from respective repositories
+            }
+
+            return dto;
         }
 
         public async Task<bool> UpdateProfileAsync(string id, UpdateProfileDto model)
@@ -198,6 +229,17 @@ namespace UniCliqueBackend.Application.Services
             if (model.Department != null) user.Department = model.Department;
             if (model.Bio != null) user.Bio = model.Bio;
 
+            await _userRepository.UpdateAsync(user);
+            return true;
+        }
+
+        public async Task<bool> ToggleProfilePrivacyAsync(string id)
+        {
+            if (!Guid.TryParse(id, out var userId)) return false;
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+
+            user.IsPrivateAccount = !user.IsPrivateAccount;
             await _userRepository.UpdateAsync(user);
             return true;
         }
@@ -316,6 +358,23 @@ namespace UniCliqueBackend.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
             await _adminRepository.AddAuditLogAsync(auditLog);
+            return true;
+        }
+
+        public async Task<bool> SubmitTechnicalFeedbackAsync(string userId, TechnicalFeedbackDto model)
+        {
+            if (!Guid.TryParse(userId, out var reporterId)) return false;
+
+            var report = new Report
+            {
+                ReporterId = reporterId,
+                Subject = model.Subject,
+                Description = model.Description,
+                Type = ReportType.Technical,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _reportRepository.AddAsync(report);
             return true;
         }
     }

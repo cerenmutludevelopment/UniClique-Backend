@@ -76,6 +76,19 @@ namespace UniCliqueBackend.Application.Services
             return true;
         }
 
+        public async Task<bool> CancelFriendRequestAsync(string userId, string targetUserId)
+        {
+            if (!Guid.TryParse(userId, out var requesterId) || !Guid.TryParse(targetUserId, out var addresseeId))
+                return false;
+
+            var friendship = await _friendshipRepository.GetFriendshipAsync(requesterId, addresseeId);
+            if (friendship == null || friendship.Status != FriendshipStatus.Pending || friendship.RequesterId != requesterId)
+                return false;
+
+            await _friendshipRepository.DeleteAsync(friendship);
+            return true;
+        }
+
         public async Task<bool> RemoveFriendAsync(string userId, string friendId)
         {
              if (!Guid.TryParse(userId, out var currentUserId) || !Guid.TryParse(friendId, out var targetId))
@@ -100,7 +113,8 @@ namespace UniCliqueBackend.Application.Services
                 Username = f.Username,
                 ProfilePhotoUrl = f.ProfilePhotoUrl,
                 University = f.University,
-                Department = f.Department
+                Department = f.Department,
+                Status = FriendshipStatus.Accepted
             });
         }
 
@@ -122,19 +136,37 @@ namespace UniCliqueBackend.Application.Services
 
         public async Task<IEnumerable<FriendDto>> SearchUsersAsync(string query, string currentUserId)
         {
+            if (!Guid.TryParse(currentUserId, out var userId)) return Enumerable.Empty<FriendDto>();
+
             var users = await _userRepository.SearchUsersAsync(query);
+            var relationships = await _friendshipRepository.GetAllFriendshipsForUserAsync(userId);
             
-            // Filter out current user from results
+            // Map relationships to dictionary for fast lookup
+            var relDict = relationships.ToDictionary(
+                f => f.RequesterId == userId ? f.AddresseeId : f.RequesterId, 
+                f => f
+            );
+
             return users
-                .Where(u => u.Id.ToString() != currentUserId)
-                .Select(u => new FriendDto
-                {
-                    UserId = u.Id,
-                    FullName = u.FullName,
-                    Username = u.Username,
-                    ProfilePhotoUrl = u.ProfilePhotoUrl,
-                    University = u.University,
-                    Department = u.Department
+                .Where(u => u.Id != userId)
+                .Select(u => {
+                    var dto = new FriendDto
+                    {
+                        UserId = u.Id,
+                        FullName = u.FullName,
+                        Username = u.Username,
+                        ProfilePhotoUrl = u.ProfilePhotoUrl,
+                        University = u.University,
+                        Department = u.Department
+                    };
+
+                    if (relDict.TryGetValue(u.Id, out var rel))
+                    {
+                        dto.Status = rel.Status;
+                        dto.IsSentByMe = rel.RequesterId == userId;
+                    }
+
+                    return dto;
                 });
         }
     }

@@ -51,6 +51,8 @@ namespace UniCliqueBackend.Domain.Entities
         // Gamification
         public int InteractionScore { get; set; } = 0; // Etkileşim puanı
 
+        public bool IsPrivateAccount { get; set; } = false; // Hesap gizliliği
+
         public bool IsEmailVerified { get; set; } = false;
         public DateTime? EmailVerifiedAt { get; set; }
 

@@ -11,7 +11,8 @@ namespace UniCliqueBackend.Application.Interfaces.Repositories
         Task<Friendship?> GetFriendshipAsync(Guid user1Id, Guid user2Id);
         Task<Friendship?> GetByIdAsync(Guid id);
         
-        Task<IEnumerable<Friendship>> GetFriendRequestsAsync(Guid userId, bool incoming); // incoming=true -> received, false -> sent
+        Task<IEnumerable<Friendship>> GetFriendRequestsAsync(Guid userId, bool incoming);
+        Task<IEnumerable<Friendship>> GetAllFriendshipsForUserAsync(Guid userId);
         Task<IEnumerable<User>> GetFriendsAsync(Guid userId);
         
         Task AddAsync(Friendship friendship);

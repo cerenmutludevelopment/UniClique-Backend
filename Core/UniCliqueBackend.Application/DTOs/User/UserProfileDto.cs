@@ -29,5 +29,7 @@ namespace UniCliqueBackend.Application.DTOs.User
         public int JoinedEventCount { get; set; }
         
         public bool IsEmailVerified { get; set; }
+        public bool IsPrivateAccount { get; set; }
+        public FriendshipStatus? FriendshipStatusWithCurrentUser { get; set; }
     }
 }

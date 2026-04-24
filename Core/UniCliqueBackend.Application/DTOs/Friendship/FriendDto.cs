@@ -10,5 +10,9 @@ namespace UniCliqueBackend.Application.DTOs.Friendship
         public string? ProfilePhotoUrl { get; set; }
         public string? University { get; set; }
         public string? Department { get; set; }
+        
+        // New fields for dynamic UI
+        public UniCliqueBackend.Domain.Enums.FriendshipStatus? Status { get; set; }
+        public bool IsSentByMe { get; set; }
     }
 }

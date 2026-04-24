@@ -17,6 +17,7 @@ namespace UniCliqueBackend.Persistence
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IFriendshipRepository, FriendshipRepository>();
+            services.AddScoped<IReportRepository, ReportRepository>();
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IPostRepository, PostRepository>();
             services.AddScoped<IBusinessRepository, BusinessRepository>();
