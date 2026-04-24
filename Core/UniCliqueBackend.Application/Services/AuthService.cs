@@ -147,7 +147,12 @@ namespace UniCliqueBackend.Application.Services
                 throw new Exception("Invalid credentials.");
             }
 
-            if (!user.IsActive || user.IsBanned)
+            if (user.Role == RoleType.Business)
+            {
+                throw new Exception("İşletme hesapları sisteme giriş yapamaz.");
+            }
+
+            if (!user.IsActive || user.IsBanned || user.IsDeleted)
             {
                 throw new Exception("Account is not active.");
             }

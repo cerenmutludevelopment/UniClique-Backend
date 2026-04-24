@@ -15,5 +15,8 @@ namespace UniCliqueBackend.Application.Interfaces.Repositories
         Task<int> GetTotalEventsAsync(Guid ownerId);
         Task<int> GetTotalParticipantsAsync(Guid ownerId);
         Task<int> GetActiveEventsAsync(Guid ownerId);
+        Task<List<BusinessDetail>> GetAllBusinessDetailsAsync();
+        Task<(List<BusinessDetail> Items, string? NextCursor)> GetPaginatedBusinessDetailsAsync(string? cursor, int pageSize, string? searchTerm);
+        Task DeleteBusinessDetailAsync(BusinessDetail detail);
     }
 }
