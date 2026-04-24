@@ -31,6 +31,13 @@ namespace UniCliqueBackendAPI.Controllers
             return Ok(stats);
         }
 
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll([FromQuery] string? cursor = null, [FromQuery] int pageSize = 20, [FromQuery] string? searchTerm = null)
+        {
+            var result = await _businessService.GetAllBusinessesAsync(cursor, pageSize, searchTerm);
+            return Ok(result);
+        }
+
         // Admin Endpoints
         [HttpPost("admin/create")]
         [Authorize(Roles = "Admin")]
@@ -40,12 +47,47 @@ namespace UniCliqueBackendAPI.Controllers
 
             try
             {
-                var password = await _businessService.AdminCreateBusinessAsync(model);
+                var businessId = await _businessService.AdminCreateBusinessAsync(model);
                 return Ok(new { 
                     Message = "İşletme başarıyla oluşturuldu.", 
-                    TemporaryPassword = password,
-                    BusinessEmail = model.Email
+                    BusinessId = businessId,
+                    BusinessName = model.BusinessName
                 });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("admin/{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateBusiness(Guid userId, [FromBody] UpdateBusinessDto model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var id = await _businessService.UpdateBusinessAsync(userId, model);
+                return Ok(new { 
+                    Message = "İşletme başarıyla güncellendi.",
+                    BusinessId = id
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("admin/{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteBusiness(Guid userId)
+        {
+            try
+            {
+                await _businessService.DeleteBusinessAsync(userId);
+                return Ok(new { Message = "İşletme başarıyla silindi." });
             }
             catch (Exception ex)
             {
