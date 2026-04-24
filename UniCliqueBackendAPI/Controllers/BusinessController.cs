@@ -20,18 +20,18 @@ namespace UniCliqueBackendAPI.Controllers
             _businessService = businessService;
         }
 
-        [HttpGet("stats")]
-        [Authorize(Roles = "Business,Admin")]
-        public async Task<IActionResult> GetStats()
+        [HttpGet("stats/{userId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetStats(string userId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return BadRequest("UserId is required.");
 
             var stats = await _businessService.GetBusinessStatsAsync(userId);
             return Ok(stats);
         }
 
         [HttpGet("all")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? cursor = null, [FromQuery] int pageSize = 20, [FromQuery] string? searchTerm = null)
         {
             var result = await _businessService.GetAllBusinessesAsync(cursor, pageSize, searchTerm);
