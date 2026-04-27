@@ -16,5 +16,9 @@ namespace UniCliqueBackend.Application.DTOs.Post
         public string? PhotoUrl { get; set; }
         
         public DateTime CreatedAt { get; set; }
+
+        public int LikeCount { get; set; } = 0;
+        public int CommentCount { get; set; } = 0;
+        public bool IsLiked { get; set; } = false;
     }
 }

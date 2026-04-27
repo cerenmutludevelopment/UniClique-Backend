@@ -22,6 +22,5 @@ namespace UniCliqueBackend.Application.Interfaces.Services
         Task<bool> ApproveStudentAsync(string id, string adminId, string? note);
         Task<bool> RejectStudentAsync(string id, string adminId, string note);
         Task<bool> SetStudentProofAsync(string userId, string documentUrl);
-        Task<bool> SubmitTechnicalFeedbackAsync(string userId, TechnicalFeedbackDto model);
     }
 }

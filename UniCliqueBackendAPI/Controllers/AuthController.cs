@@ -223,7 +223,7 @@ namespace UniCliqueBackendAPI.Controllers
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
                 if (string.IsNullOrWhiteSpace(userId)) return Unauthorized(new ApiMessageDto { Message = "Unauthorized" });
-                var profile = await _userService.GetUserProfileAsync(userId);
+                var profile = await _userService.GetUserProfileAsync(userId, userId);
                 if (profile == null) return Unauthorized(new ApiMessageDto { Message = "Unauthorized" });
                 var endpoint = $"/api/auth/student-proof/{id}";
                 if (!string.Equals(profile.StudentDocumentUrl, endpoint, StringComparison.OrdinalIgnoreCase))

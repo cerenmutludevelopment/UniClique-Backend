@@ -17,6 +17,7 @@ namespace UniCliqueBackend.Application
             services.AddScoped<IEventService, EventService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IBusinessService, BusinessService>();
+            services.AddScoped<IReportService, ReportService>();
         }
     }
 }

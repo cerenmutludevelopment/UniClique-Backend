@@ -50,7 +50,10 @@ namespace UniCliqueBackendAPI.Controllers
         [HttpGet("events/{eventId}/posts")]
         public async Task<IActionResult> GetPostsByEvent(Guid eventId)
         {
-            var posts = await _postService.GetPostsByEventIdAsync(eventId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var posts = await _postService.GetPostsByEventIdAsync(eventId, userId);
             return Ok(posts);
         }
 
@@ -64,10 +67,13 @@ namespace UniCliqueBackendAPI.Controllers
             return Ok(posts);
         }
 
-        [HttpGet("users/{userId}/posts")]
-        public async Task<IActionResult> GetUserPosts(string userId)
+        [HttpGet("users/{targetUserId}/posts")]
+        public async Task<IActionResult> GetUserPosts(string targetUserId)
         {
-            var posts = await _postService.GetUserPostsAsync(userId);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+            var posts = await _postService.GetUserPostsAsync(targetUserId, currentUserId);
             return Ok(posts);
         }
 
@@ -79,6 +85,49 @@ namespace UniCliqueBackendAPI.Controllers
 
             var feed = await _postService.GetFeedAsync(userId);
             return Ok(feed);
+        }
+
+        [HttpPost("posts/{id}/like")]
+        public async Task<IActionResult> ToggleLike(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _postService.ToggleLikeAsync(id, userId);
+            return Ok(new { liked = result });
+        }
+
+        [HttpPost("posts/{id}/comments")]
+        public async Task<IActionResult> AddComment(Guid id, [FromBody] CreatePostCommentDto model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var comment = await _postService.AddCommentAsync(id, model, userId);
+            if (comment == null) return BadRequest("Failed to add comment.");
+
+            return Ok(comment);
+        }
+
+        [HttpGet("posts/{id}/comments")]
+        public async Task<IActionResult> GetPostComments(Guid id)
+        {
+            var comments = await _postService.GetPostCommentsAsync(id);
+            return Ok(comments);
+        }
+
+        [HttpDelete("posts/comments/{commentId}")]
+        public async Task<IActionResult> DeleteComment(Guid commentId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _postService.DeleteCommentAsync(commentId, userId);
+            if (!result) return BadRequest("Failed to delete comment or unauthorized.");
+
+            return Ok("Comment deleted successfully.");
         }
     }
 }

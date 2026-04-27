@@ -208,8 +208,11 @@ namespace UniCliqueBackend.Persistence.Repositories
                 TRUNCATE TABLE ""UserConsents"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""UserExternalLogins"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""AuditLogs"" RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE ""BusinessRequests"" RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE ""BusinessDetails"" RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE ""Reports"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""Friendships"" RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE ""PostLikes"" RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE ""PostComments"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""Posts"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""EventParticipants"" RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE ""Events"" RESTART IDENTITY CASCADE;
@@ -226,7 +229,10 @@ namespace UniCliqueBackend.Persistence.Repositories
                 DELETE FROM ""UserVerificationCodes"" WHERE ""UserId"" = {0};
                 DELETE FROM ""UserConsents"" WHERE ""UserId"" = {0};
                 DELETE FROM ""UserExternalLogins"" WHERE ""UserId"" = {0};
-                DELETE FROM ""BusinessRequests"" WHERE ""UserId"" = {0};
+                DELETE FROM ""BusinessDetails"" WHERE ""UserId"" = {0};
+                DELETE FROM ""Reports"" WHERE ""ReporterId"" = {0};
+                DELETE FROM ""PostLikes"" WHERE ""UserId"" = {0};
+                DELETE FROM ""PostComments"" WHERE ""UserId"" = {0};
                 DELETE FROM ""Friendships"" WHERE ""RequesterId"" = {0} OR ""AddresseeId"" = {0};
                 DELETE FROM ""Posts"" WHERE ""UserId"" = {0};
                 DELETE FROM ""EventParticipants"" WHERE ""UserId"" = {0};

@@ -24,5 +24,8 @@ namespace UniCliqueBackend.Domain.Entities
         public string? PhotoUrl { get; set; }
 
         public bool IsDeleted { get; set; } = false;
+
+        public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();
+        public ICollection<PostComment> Comments { get; set; } = new List<PostComment>();
     }
 }

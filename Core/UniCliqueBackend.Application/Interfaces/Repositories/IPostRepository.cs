@@ -17,5 +17,15 @@ namespace UniCliqueBackend.Application.Interfaces.Repositories
         Task DeleteAsync(Post post);
         
         Task<IEnumerable<Post>> GetFeedAsync(IEnumerable<Guid> friendIds);
+
+        // Interactions
+        Task<PostLike?> GetLikeAsync(Guid postId, Guid userId);
+        Task AddLikeAsync(PostLike like);
+        Task RemoveLikeAsync(PostLike like);
+
+        Task AddCommentAsync(PostComment comment);
+        Task RemoveCommentAsync(PostComment comment);
+        Task<PostComment?> GetCommentByIdAsync(Guid commentId);
+        Task<IEnumerable<PostComment>> GetCommentsByPostIdAsync(Guid postId);
     }
 }

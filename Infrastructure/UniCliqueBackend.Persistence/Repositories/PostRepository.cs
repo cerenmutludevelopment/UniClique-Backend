@@ -23,6 +23,8 @@ namespace UniCliqueBackend.Persistence.Repositories
             return await _context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
                 .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
         }
 
@@ -31,6 +33,8 @@ namespace UniCliqueBackend.Persistence.Repositories
              return await _context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
                 .Where(p => !p.IsDeleted)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -40,6 +44,8 @@ namespace UniCliqueBackend.Persistence.Repositories
         {
             return await _context.Posts
                 .Include(p => p.User)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
                 .Where(p => p.EventId == eventId && !p.IsDeleted)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -49,6 +55,8 @@ namespace UniCliqueBackend.Persistence.Repositories
         {
             return await _context.Posts
                 .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
                 .Where(p => p.UserId == userId && !p.IsDeleted)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -80,8 +88,56 @@ namespace UniCliqueBackend.Persistence.Repositories
             return await _context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
                 .Where(p => friendIds.Contains(p.UserId) && !p.IsDeleted)
                 .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<PostLike?> GetLikeAsync(Guid postId, Guid userId)
+        {
+            return await _context.PostLikes
+                .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
+        }
+
+        public async Task AddLikeAsync(PostLike like)
+        {
+            await _context.PostLikes.AddAsync(like);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RemoveLikeAsync(PostLike like)
+        {
+            _context.PostLikes.Remove(like);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddCommentAsync(PostComment comment)
+        {
+            await _context.PostComments.AddAsync(comment);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RemoveCommentAsync(PostComment comment)
+        {
+            _context.PostComments.Remove(comment);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<PostComment?> GetCommentByIdAsync(Guid commentId)
+        {
+            return await _context.PostComments
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.Id == commentId && !c.IsDeleted);
+        }
+
+        public async Task<IEnumerable<PostComment>> GetCommentsByPostIdAsync(Guid postId)
+        {
+            return await _context.PostComments
+                .Include(c => c.User)
+                .Where(c => c.PostId == postId && !c.IsDeleted)
+                .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
         }
     }

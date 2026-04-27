@@ -57,17 +57,6 @@ namespace UniCliqueBackendAPI.Controllers
             return Ok("Privacy settings updated.");
         }
 
-        [HttpPost("me/feedback")]
-        public async Task<IActionResult> PostFeedback([FromBody] TechnicalFeedbackDto model)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
-            var result = await _userService.SubmitTechnicalFeedbackAsync(userId, model);
-            if (!result) return BadRequest("Failed to submit feedback.");
-
-            return Ok("Feedback submitted successfully.");
-        }
 
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileDto model)

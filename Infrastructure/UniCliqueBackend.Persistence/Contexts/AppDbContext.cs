@@ -18,6 +18,8 @@ namespace UniCliqueBackend.Persistence.Contexts
         public DbSet<Event> Events => Set<Event>();
         public DbSet<EventParticipant> EventParticipants => Set<EventParticipant>();
         public DbSet<Post> Posts => Set<Post>();
+        public DbSet<PostLike> PostLikes => Set<PostLike>();
+        public DbSet<PostComment> PostComments => Set<PostComment>();
         public DbSet<BusinessDetail> BusinessDetails => Set<BusinessDetail>();
         public DbSet<Report> Reports => Set<Report>();
 
@@ -40,6 +42,8 @@ namespace UniCliqueBackend.Persistence.Contexts
             modelBuilder.ApplyConfiguration(new EventConfiguration());
             modelBuilder.ApplyConfiguration(new EventParticipantConfiguration());
             modelBuilder.ApplyConfiguration(new PostConfiguration());
+            modelBuilder.ApplyConfiguration(new PostLikeConfiguration());
+            modelBuilder.ApplyConfiguration(new PostCommentConfiguration());
             modelBuilder.ApplyConfiguration(new BusinessDetailConfiguration());
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())

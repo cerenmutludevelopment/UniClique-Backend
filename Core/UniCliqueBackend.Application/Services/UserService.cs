@@ -360,22 +360,5 @@ namespace UniCliqueBackend.Application.Services
             await _adminRepository.AddAuditLogAsync(auditLog);
             return true;
         }
-
-        public async Task<bool> SubmitTechnicalFeedbackAsync(string userId, TechnicalFeedbackDto model)
-        {
-            if (!Guid.TryParse(userId, out var reporterId)) return false;
-
-            var report = new Report
-            {
-                ReporterId = reporterId,
-                Subject = model.Subject,
-                Description = model.Description,
-                Type = ReportType.Technical,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _reportRepository.AddAsync(report);
-            return true;
-        }
     }
 }
