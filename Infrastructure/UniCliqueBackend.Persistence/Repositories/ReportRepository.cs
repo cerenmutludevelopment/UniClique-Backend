@@ -26,5 +26,20 @@ namespace UniCliqueBackend.Persistence.Repositories
         {
             return await _context.Reports.FirstOrDefaultAsync(r => r.Id == id);
         }
+
+        public async Task<IEnumerable<Report>> GetAllAsync(int pageNumber, int pageSize)
+        {
+            return await _context.Reports
+                                 .OrderByDescending(r => r.CreatedAt)
+                                 .Skip((pageNumber - 1) * pageSize)
+                                 .Take(pageSize)
+                                 .ToListAsync();
+        }
+
+        public async Task UpdateAsync(Report report)
+        {
+            _context.Reports.Update(report);
+            await _context.SaveChangesAsync();
+        }
     }
 }

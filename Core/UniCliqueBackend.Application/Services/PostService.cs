@@ -86,8 +86,23 @@ namespace UniCliqueBackend.Application.Services
         
         public async Task<IEnumerable<PostDto>> GetUserPostsAsync(string userId, string currentUserId)
         {
-             if (!Guid.TryParse(userId, out var uid)) return Enumerable.Empty<PostDto>();
-             var posts = await _postRepository.GetByUserIdAsync(uid);
+             if (!Guid.TryParse(userId, out var targetUid) || !Guid.TryParse(currentUserId, out var currentUid)) 
+                 return Enumerable.Empty<PostDto>();
+
+             if (targetUid != currentUid)
+             {
+                 var targetUser = await _userRepository.GetByIdAsync(targetUid);
+                 if (targetUser != null && targetUser.IsPrivateAccount)
+                 {
+                     var friendship = await _friendshipRepository.GetFriendshipAsync(targetUid, currentUid);
+                     if (friendship == null || friendship.Status != Domain.Enums.FriendshipStatus.Accepted)
+                     {
+                         return Enumerable.Empty<PostDto>();
+                     }
+                 }
+             }
+
+             var posts = await _postRepository.GetByUserIdAsync(targetUid);
              return posts.Select(p => MapToDto(p, currentUserId));
         }
 

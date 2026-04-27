@@ -13,10 +13,31 @@ namespace UniCliqueBackendAPI.Controllers.Admin
     public class AdminUserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IReportService _reportService;
 
-        public AdminUserController(IUserService userService)
+        public AdminUserController(IUserService userService, IReportService reportService)
         {
             _userService = userService;
+            _reportService = reportService;
+        }
+
+        [HttpGet("~/api/admin/reports")]
+        public async Task<IActionResult> GetAllReports([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+        {
+            var reports = await _reportService.GetAllReportsAsync(pageNumber, pageSize);
+            return Ok(reports);
+        }
+
+        [HttpPatch("~/api/admin/reports/{reportId}/resolve")]
+        public async Task<IActionResult> ResolveReport(Guid reportId, [FromBody] UniCliqueBackend.Application.DTOs.Admin.Report.ResolveReportDto model)
+        {
+            var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (adminId == null) return Unauthorized();
+
+            var result = await _reportService.ResolveReportAsync(reportId, model, adminId);
+            if (!result) return BadRequest("Failed to resolve report.");
+
+            return Ok("Report resolved successfully.");
         }
 
         [HttpGet("student-requests")]

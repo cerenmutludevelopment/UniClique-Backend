@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UniCliqueBackend.Domain.Entities;
 
@@ -7,6 +8,7 @@ namespace UniCliqueBackend.Application.Interfaces.Repositories
     {
         Task AddAsync(Report report);
         Task<Report?> GetByIdAsync(Guid id);
-        // Add more methods for admin panel later if needed
+        Task<IEnumerable<Report>> GetAllAsync(int pageNumber, int pageSize);
+        Task UpdateAsync(Report report);
     }
 }
