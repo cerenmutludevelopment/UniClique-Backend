@@ -301,7 +301,7 @@ namespace UniCliqueBackend.Application.Services
             return await GenerateTokensForUser(user);
         }
 
-        public async Task ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request)
+        public async Task<string?> ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
                 throw new Exception("Email is required.");
@@ -309,7 +309,7 @@ namespace UniCliqueBackend.Application.Services
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                return;
+                return null;
             }
             if (user.IsEmailVerified)
             {
@@ -323,6 +323,7 @@ namespace UniCliqueBackend.Application.Services
             }
 
             await SendRegisterEmailVerificationAsync(user);
+            return user.Id.ToString();
         }
 
         private async Task<TokenResponseDto> GenerateTokensForUser(User user)

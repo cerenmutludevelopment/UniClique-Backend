@@ -14,5 +14,6 @@ namespace UniCliqueBackend.Application.DTOs.Friendship
         // New fields for dynamic UI
         public UniCliqueBackend.Domain.Enums.FriendshipStatus? Status { get; set; }
         public bool IsSentByMe { get; set; }
+        public Guid? FriendshipId { get; set; }
     }
 }

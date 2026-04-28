@@ -5,7 +5,7 @@ using UniCliqueBackend.Domain.Common;
 
 namespace UniCliqueBackend.Domain.Entities
 {
-    public class PostComment : BaseEntity
+    public class PostTag : BaseEntity
     {
         [Required]
         public Guid PostId { get; set; }
@@ -16,11 +16,5 @@ namespace UniCliqueBackend.Domain.Entities
         public Guid UserId { get; set; }
         [ForeignKey("UserId")]
         public User User { get; set; } = null!;
-
-        [Required]
-        [MaxLength(500)]
-        public string Content { get; set; } = string.Empty;
-
-        public ICollection<CommentTag> CommentTags { get; set; } = new List<CommentTag>();
     }
 }

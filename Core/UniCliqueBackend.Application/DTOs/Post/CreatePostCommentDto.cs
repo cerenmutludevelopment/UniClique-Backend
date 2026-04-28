@@ -8,5 +8,7 @@ namespace UniCliqueBackend.Application.DTOs.Post
         [Required]
         [MaxLength(500)]
         public string Content { get; set; } = string.Empty;
+
+        public System.Collections.Generic.List<Guid>? TaggedUserIds { get; set; } = new System.Collections.Generic.List<Guid>();
     }
 }

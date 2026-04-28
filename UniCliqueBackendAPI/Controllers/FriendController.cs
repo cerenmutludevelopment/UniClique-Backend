@@ -24,9 +24,9 @@ namespace UniCliqueBackendAPI.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _friendService.SendFriendRequestAsync(userId, targetUserId);
-            if (!result) return BadRequest("Failed to send friend request. User might not exist or request already sent.");
+            if (!result) return BadRequest("Friend request failed. Possible reasons: 1) The user does not exist. 2) A friend request has already been sent. 3) You are already friends with this user. 4) You cannot send a friend request to yourself.");
 
-            return Ok("Friend request sent successfully.");
+            return Ok("Friend request successfully sent to the target user.");
         }
 
         [HttpDelete("request/cancel/{targetUserId}")]
@@ -36,9 +36,9 @@ namespace UniCliqueBackendAPI.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _friendService.CancelFriendRequestAsync(userId, targetUserId);
-            if (!result) return BadRequest("Failed to cancel friend request.");
+            if (!result) return BadRequest("Failed to cancel the friend request. Make sure the request is still pending and it was sent by you.");
 
-            return Ok("Friend request cancelled.");
+            return Ok("Your pending friend request has been successfully cancelled.");
         }
 
         [HttpPut("accept/{requestId}")]
@@ -48,9 +48,9 @@ namespace UniCliqueBackendAPI.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _friendService.AcceptFriendRequestAsync(userId, requestId);
-            if (!result) return BadRequest("Failed to accept request.");
+            if (!result) return BadRequest("Failed to accept the friend request. The request ID might be invalid, it might have already been accepted/rejected, or you are not the receiver of this request.");
 
-            return Ok("Friend request accepted.");
+            return Ok("Friend request accepted. You are now friends!");
         }
 
         [HttpPut("reject/{requestId}")]
@@ -60,9 +60,9 @@ namespace UniCliqueBackendAPI.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _friendService.RejectFriendRequestAsync(userId, requestId);
-            if (!result) return BadRequest("Failed to reject request.");
+            if (!result) return BadRequest("Failed to reject the friend request. The request ID might be invalid or you are not the receiver of this request.");
 
-            return Ok("Friend request rejected.");
+            return Ok("Friend request rejected successfully.");
         }
 
         [HttpDelete("{friendId}")]
@@ -72,9 +72,9 @@ namespace UniCliqueBackendAPI.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _friendService.RemoveFriendAsync(userId, friendId);
-            if (!result) return BadRequest("Failed to remove friend.");
+            if (!result) return BadRequest("Failed to remove friend. Make sure you are actually friends with this user and the friend ID is valid.");
 
-            return Ok("Friend removed successfully.");
+            return Ok("Friend successfully removed from your friends list.");
         }
 
         [HttpGet]

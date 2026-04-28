@@ -22,6 +22,8 @@ namespace UniCliqueBackend.Persistence.Contexts
         public DbSet<PostComment> PostComments => Set<PostComment>();
         public DbSet<BusinessDetail> BusinessDetails => Set<BusinessDetail>();
         public DbSet<Report> Reports => Set<Report>();
+        public DbSet<PostTag> PostTags => Set<PostTag>();
+        public DbSet<CommentTag> CommentTags => Set<CommentTag>();
 
         // 🔹 Constructor
         public AppDbContext(DbContextOptions<AppDbContext> options)

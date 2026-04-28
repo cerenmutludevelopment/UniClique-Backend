@@ -155,8 +155,9 @@ namespace UniCliqueBackendAPI.Controllers
         [ProducesResponseType(typeof(ApiMessageDto), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> ResendEmail([FromBody] ResendEmailVerificationRequestDto request)
         {
-            await _authService.ResendRegisterEmailVerificationAsync(request);
-            return Ok(new ApiMessageDto { Message = "Verification code sent." });
+            var userId = await _authService.ResendRegisterEmailVerificationAsync(request);
+            if (string.IsNullOrEmpty(userId)) return NotFound(new { message = "User with this email not found." });
+            return Ok(new { message = "Verification code sent.", userId });
         }
 
         [HttpPost("forgot-password/start")]

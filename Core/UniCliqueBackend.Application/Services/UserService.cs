@@ -184,7 +184,9 @@ namespace UniCliqueBackend.Application.Services
                 InteractionScore = user.InteractionScore,
                 IsEmailVerified = user.IsEmailVerified,
                 IsPrivateAccount = user.IsPrivateAccount,
-                FriendshipStatusWithCurrentUser = friendship?.Status
+                FriendshipStatusWithCurrentUser = friendship?.Status,
+                FriendshipId = friendship?.Id,
+                IsFriendshipSentByMe = friendship?.RequesterId == currentUserId
             };
 
             // If profile is private and they are not friends (and it's not their own profile), hide sensitive info

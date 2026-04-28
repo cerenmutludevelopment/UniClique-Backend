@@ -105,17 +105,32 @@ namespace UniCliqueBackend.Application.Services
         {
             if (!Guid.TryParse(userId, out var currentUserId)) return Enumerable.Empty<FriendDto>();
 
-            var friends = await _friendshipRepository.GetFriendsAsync(currentUserId);
-            return friends.Select(f => new FriendDto
+            var relationships = await _friendshipRepository.GetAllFriendshipsForUserAsync(currentUserId);
+            var friendsList = new System.Collections.Generic.List<FriendDto>();
+
+            foreach (var rel in relationships.Where(r => r.Status == Domain.Enums.FriendshipStatus.Accepted))
             {
-                UserId = f.Id,
-                FullName = f.FullName,
-                Username = f.Username,
-                ProfilePhotoUrl = f.ProfilePhotoUrl,
-                University = f.University,
-                Department = f.Department,
-                Status = FriendshipStatus.Accepted
-            });
+                var friendId = rel.RequesterId == currentUserId ? rel.AddresseeId : rel.RequesterId;
+                var friendUser = await _userRepository.GetByIdAsync(friendId);
+                
+                if (friendUser != null)
+                {
+                    friendsList.Add(new FriendDto
+                    {
+                        UserId = friendUser.Id,
+                        FullName = friendUser.FullName,
+                        Username = friendUser.Username,
+                        ProfilePhotoUrl = friendUser.ProfilePhotoUrl,
+                        University = friendUser.University,
+                        Department = friendUser.Department,
+                        Status = rel.Status,
+                        IsSentByMe = rel.RequesterId == currentUserId,
+                        FriendshipId = rel.Id
+                    });
+                }
+            }
+
+            return friendsList;
         }
 
         public async Task<IEnumerable<FriendRequestDto>> GetPendingRequestsAsync(string userId)
@@ -164,6 +179,7 @@ namespace UniCliqueBackend.Application.Services
                     {
                         dto.Status = rel.Status;
                         dto.IsSentByMe = rel.RequesterId == userId;
+                        dto.FriendshipId = rel.Id;
                     }
 
                     return dto;

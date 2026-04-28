@@ -31,5 +31,7 @@ namespace UniCliqueBackend.Application.DTOs.User
         public bool IsEmailVerified { get; set; }
         public bool IsPrivateAccount { get; set; }
         public FriendshipStatus? FriendshipStatusWithCurrentUser { get; set; }
+        public Guid? FriendshipId { get; set; }
+        public bool IsFriendshipSentByMe { get; set; }
     }
 }

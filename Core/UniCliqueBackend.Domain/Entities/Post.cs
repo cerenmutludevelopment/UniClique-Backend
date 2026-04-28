@@ -27,5 +27,6 @@ namespace UniCliqueBackend.Domain.Entities
 
         public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();
         public ICollection<PostComment> Comments { get; set; } = new List<PostComment>();
+        public ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
     }
 }

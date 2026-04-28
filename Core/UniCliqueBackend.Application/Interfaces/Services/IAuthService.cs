@@ -13,7 +13,7 @@ namespace UniCliqueBackend.Application.Interfaces.Services
         Task LogoutByRefreshAsync(string refreshToken);
         Task<TokenResponseDto> ExternalLoginAsync(ExternalLoginRequestDto request);
         Task<TokenResponseDto> VerifyEmailByUserIdAsync(VerifyEmailByUserIdRequestDto request);
-        Task ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request);
+        Task<string?> ResendRegisterEmailVerificationAsync(ResendEmailVerificationRequestDto request);
         Task ResetDatabaseAsync();
         Task<bool> DeleteUserByEmailAsync(string email);
         Task<string> ForgotPasswordStartAsync(ForgotPasswordStartRequestDto request);

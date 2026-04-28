@@ -13,5 +13,7 @@ namespace UniCliqueBackend.Application.DTOs.Post
 
         [MaxLength(200)]
         public string? PhotoUrl { get; set; }
+
+        public System.Collections.Generic.List<Guid>? TaggedUserIds { get; set; } = new System.Collections.Generic.List<Guid>();
     }
 }

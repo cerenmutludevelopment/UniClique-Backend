@@ -50,6 +50,20 @@ namespace UniCliqueBackend.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
+            if (model.TaggedUserIds != null && model.TaggedUserIds.Any())
+            {
+                foreach (var taggedId in model.TaggedUserIds)
+                {
+                    var isParticipant = await _eventRepository.GetParticipantAsync(model.EventId, taggedId);
+                    if (isParticipant == null && evt.OwnerId != taggedId)
+                    {
+                        throw new Exception("Only event participants or the event owner can be tagged in a post.");
+                    }
+
+                    post.PostTags.Add(new PostTag { UserId = taggedId });
+                }
+            }
+
             await _postRepository.AddAsync(post);
 
             user.InteractionScore += 5; 
@@ -173,6 +187,22 @@ namespace UniCliqueBackend.Application.Services
                 Content = model.Content,
                 CreatedAt = DateTime.UtcNow
             };
+
+            if (model.TaggedUserIds != null && model.TaggedUserIds.Any())
+            {
+                var friends = await _friendshipRepository.GetFriendsAsync(uid);
+                var friendIds = friends.Select(f => f.Id).ToList();
+
+                foreach (var taggedId in model.TaggedUserIds)
+                {
+                    if (!friendIds.Contains(taggedId))
+                    {
+                        throw new Exception("You can only tag your friends in the comments.");
+                    }
+
+                    comment.CommentTags.Add(new CommentTag { UserId = taggedId });
+                }
+            }
 
             await _postRepository.AddCommentAsync(comment);
 
